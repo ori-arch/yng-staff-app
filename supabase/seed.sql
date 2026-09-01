@@ -6,8 +6,10 @@
 insert into rooms (name) values ('Room 1'), ('Room 2');
 
 insert into employees (name, role, is_admin, is_owner) values
-  ('Ori', 'front_desk', true, true),
+  ('Ori', 'manager', true, true),
+  ('Amy', 'manager', false, false),
   ('Bree', 'aesthetician', false, false),
   ('Lexi', 'aesthetician', false, false),
   ('Megan', 'aesthetician', false, false),
   ('Nielie', 'aesthetician', false, false);
+-- No front_desk employees yet as of 2026-09-01 — role stays supported for when one is hired.
