@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 /** Public-ish roster for the login picker: names + ids only, no PIN data. */
 export async function GET() {
   const supabase = supabaseAdmin();

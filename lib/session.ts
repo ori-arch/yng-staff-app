@@ -7,7 +7,7 @@ const MAX_AGE_SECONDS = 60 * 60 * 16; // 16 hours — long enough for a shift
 export type SessionPayload = {
   employeeId: string;
   name: string;
-  role: "front_desk" | "aesthetician";
+  role: "front_desk" | "aesthetician" | "manager";
   isAdmin: boolean;
   isOwner: boolean;
   issuedAt: number;

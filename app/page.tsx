@@ -6,6 +6,12 @@ import Image from "next/image";
 
 type Employee = { id: string; name: string; role: string };
 
+const ROLE_LABEL: Record<string, string> = {
+  front_desk: "Front Desk",
+  aesthetician: "Aesthetician",
+  manager: "Manager",
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [employees, setEmployees] = useState<Employee[] | null>(null);
@@ -41,7 +47,7 @@ export default function HomePage() {
             onClick={() => router.push(`/login/${e.id}`)}
           >
             {e.name}
-            <span className="sub">{e.role === "front_desk" ? "Front Desk" : "Aesthetician"}</span>
+            <span className="sub">{ROLE_LABEL[e.role] ?? e.role}</span>
           </button>
         ))}
       </div>
