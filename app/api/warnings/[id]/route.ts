@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const supabase = supabaseAdmin();
   const { data: warning, error } = await supabase
     .from("warning_notices")
-    .select("id, employee_id, violation_date, violation_description, status, quarter_label, employee_comments, acknowledged_at, created_at, employees(name)")
+    .select("id, employee_id, violation_date, violation_description, status, quarter_label, employee_comments, acknowledged_at, created_at, employees!warning_notices_employee_id_fkey(name)")
     .eq("id", params.id)
     .maybeSingle();
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

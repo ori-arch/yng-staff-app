@@ -20,7 +20,7 @@ export async function GET() {
   const supabase = supabaseAdmin();
   let query = supabase
     .from("warning_notices")
-    .select("id, employee_id, violation_date, violation_description, status, quarter_label, created_at, employees(name)")
+    .select("id, employee_id, violation_date, violation_description, status, quarter_label, created_at, employees!warning_notices_employee_id_fkey(name)")
     .order("created_at", { ascending: false });
 
   if (!isManager) {
