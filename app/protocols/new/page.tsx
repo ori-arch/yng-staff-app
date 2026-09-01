@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import ProtocolsList from "./client";
+import NewProtocolForm from "./client";
 
-export default function ProtocolsPage() {
+export default function NewProtocolPage() {
   const session = getSession();
   if (!session) redirect("/");
 
   const isManager = session.role === "manager" || session.isAdmin;
-  return <ProtocolsList isManager={isManager} />;
+  if (!isManager) redirect("/protocols");
+
+  return <NewProtocolForm />;
 }

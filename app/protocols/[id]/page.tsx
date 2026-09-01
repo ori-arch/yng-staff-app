@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
-import ProtocolsList from "./client";
+import ProtocolDetail from "./client";
 
-export default function ProtocolsPage() {
+export default function ProtocolDetailPage({ params }: { params: { id: string } }) {
   const session = getSession();
   if (!session) redirect("/");
 
   const isManager = session.role === "manager" || session.isAdmin;
-  return <ProtocolsList isManager={isManager} />;
+  return <ProtocolDetail id={params.id} isManager={isManager} />;
 }

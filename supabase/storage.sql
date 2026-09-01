@@ -9,3 +9,7 @@ on conflict (id) do nothing;
 insert into storage.buckets (id, name, public)
 values ('equipment-photos', 'equipment-photos', true)
 on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('protocol-files', 'protocol-files', true)
+on conflict (id) do nothing;
