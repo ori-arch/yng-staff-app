@@ -26,6 +26,8 @@ const TILES: Record<string, Tile> = {
   timeOff: { href: "/time-off", label: "Time Off", sub: "Request & balance" },
   shiftSwap: { href: "/shift-swap", label: "Shift Swap", sub: "Trade a shift" },
   admin: { href: "/admin", label: "Admin Panel", sub: "Manage everything" },
+  compliance: { href: "/compliance", label: "Compliance", sub: "Checklist history" },
+  warnings: { href: "/warnings", label: "Warnings", sub: "Notices & acknowledgment" },
 };
 
 function TileGrid({ tiles }: { tiles: Tile[] }) {
@@ -112,7 +114,7 @@ async function ManagerDashboard({ isAdmin }: { isAdmin: boolean }) {
           <span className="num">{stats.pendingSwaps}</span>
           <span className="label">Shift swaps</span>
         </a>
-        <a href="/admin" className={`stat-card${stats.openWarnings > 0 ? " attention" : ""}`}>
+        <a href="/warnings" className={`stat-card${stats.openWarnings > 0 ? " attention" : ""}`}>
           <span className="num">{stats.openWarnings}</span>
           <span className="label">Open warnings</span>
         </a>
@@ -125,7 +127,7 @@ async function ManagerDashboard({ isAdmin }: { isAdmin: boolean }) {
           <span className="sub">Message the whole team</span>
         </a>
       </div>
-      <TileGrid tiles={[TILES.protocols, TILES.timeOff, TILES.messages, TILES.admin]} />
+      <TileGrid tiles={[TILES.compliance, TILES.protocols, TILES.timeOff, TILES.messages, TILES.admin]} />
 
       {isAdmin && (
         <>
@@ -154,7 +156,7 @@ function FrontDeskDashboard() {
       <TileGrid tiles={[TILES.restockRunner, TILES.loftCleaning]} />
 
       <div className="section-label">Also</div>
-      <TileGrid tiles={[TILES.equipment, TILES.protocols, TILES.messages, TILES.timeOff, TILES.shiftSwap]} />
+      <TileGrid tiles={[TILES.equipment, TILES.protocols, TILES.messages, TILES.timeOff, TILES.shiftSwap, TILES.warnings]} />
 
       <p style={{ marginTop: 24, fontSize: 12.5, color: "#6b6b6b", textAlign: "center" }}>
         More screens are still being built out — this is the foundation.
@@ -179,7 +181,7 @@ function AestheticianDashboard() {
       <TileGrid tiles={[TILES.restockRunner, TILES.loftCleaning]} />
 
       <div className="section-label">Also</div>
-      <TileGrid tiles={[TILES.protocols, TILES.messages, TILES.timeOff, TILES.shiftSwap]} />
+      <TileGrid tiles={[TILES.protocols, TILES.messages, TILES.timeOff, TILES.shiftSwap, TILES.warnings]} />
 
       <p style={{ marginTop: 24, fontSize: 12.5, color: "#6b6b6b", textAlign: "center" }}>
         More screens are still being built out — this is the foundation.
