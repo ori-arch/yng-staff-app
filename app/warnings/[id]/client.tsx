@@ -82,7 +82,7 @@ export default function WarningDetail({ id }: { id: string }) {
   if (loading) {
     return (
       <div className="container">
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       </div>
     );
   }
@@ -90,9 +90,6 @@ export default function WarningDetail({ id }: { id: string }) {
   if (error && !warning) {
     return (
       <div className="container">
-        <div className="top-bar">
-          <a href="/warnings" className="link-button">← Warnings</a>
-        </div>
         <p className="error-text">{error}</p>
       </div>
     );
@@ -102,14 +99,11 @@ export default function WarningDetail({ id }: { id: string }) {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/warnings" className="link-button">← Warnings</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Warning Notice</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>
+      <h1 className="page-title">Warning Notice</h1>
+      <p style={{ color: "var(--muted)", fontSize: 14 }}>
         {warning.employeeName} · {fmtDate(warning.violationDate)} · {warning.quarterLabel}
       </p>
-      <p style={{ color: "#6b6b6b", fontSize: 12.5 }}>
+      <p style={{ color: "var(--muted)", fontSize: 12.5 }}>
         Warning {quarterCount} of 3 this quarter{quarterCount >= 3 ? " — probation/termination threshold reached" : ""}
       </p>
 
@@ -136,7 +130,7 @@ export default function WarningDetail({ id }: { id: string }) {
       </div>
 
       {canAcknowledge && !acknowledging && (
-        <button className="primary" style={{ marginTop: 16 }} onClick={() => setAcknowledging(true)}>
+        <button className="btn" style={{ marginTop: 16 }} onClick={() => setAcknowledging(true)}>
           Acknowledge this warning
         </button>
       )}
@@ -148,7 +142,7 @@ export default function WarningDetail({ id }: { id: string }) {
             value={comments}
             onChange={(e) => setComments(e.target.value)}
             rows={3}
-            style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontFamily: "inherit" }}
+            style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: "inherit" }}
           />
 
           <p style={{ fontSize: 13, fontWeight: 600, marginTop: 12, textAlign: "center" }}>Re-enter your PIN to sign</p>
@@ -166,7 +160,7 @@ export default function WarningDetail({ id }: { id: string }) {
             <button onClick={() => pressDigit("0")} disabled={submitting}>0</button>
             <button onClick={() => setPin((p) => p.slice(0, -1))} disabled={submitting}>⌫</button>
           </div>
-          <button className="primary" style={{ marginTop: 12 }} disabled={pin.length < 4 || submitting} onClick={submitAcknowledge}>
+          <button className="btn" style={{ marginTop: 12 }} disabled={pin.length < 4 || submitting} onClick={submitAcknowledge}>
             {submitting ? "Submitting…" : "Confirm Acknowledgment"}
           </button>
         </div>

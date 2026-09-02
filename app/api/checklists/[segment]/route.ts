@@ -55,6 +55,28 @@ export async function GET(req: NextRequest, { params }: { params: { segment: str
     .limit(1)
     .maybeSingle();
 
+  // If this segment was already signed off today and the caller hasn't explicitly
+  // asked to start another, report that instead of silently opening a new one.
+  if (!submission && req.nextUrl.searchParams.get("again") !== "1") {
+    const { data: completedToday } = await supabase
+      .from("checklist_submissions")
+      .select("id, completed_at")
+      .eq("employee_id", session.employeeId)
+      .eq("role", session.role)
+      .eq("segment", segment)
+      .eq("submission_date", today)
+      .not("completed_at", "is", null)
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (completedToday) {
+      return NextResponse.json(
+        { alreadyCompleted: true, completedAt: completedToday.completed_at, segment },
+        { headers: { "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0" } }
+      );
+    }
+  }
+
   if (!submission) {
     const { data: created, error: createError } = await supabase
       .from("checklist_submissions")

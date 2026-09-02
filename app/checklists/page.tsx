@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 type SegmentStatus = { segment: string; completedToday: boolean };
 
 const SEGMENT_LABEL: Record<string, { label: string; sub: string }> = {
-  open: { label: "Opening Checklist", sub: "Start-of-shift tasks" },
-  close: { label: "Closing Checklist", sub: "End-of-shift tasks" },
+  open: { label: "Opening", sub: "Start-of-shift tasks" },
+  close: { label: "Closing", sub: "End-of-shift tasks" },
 };
 
 export default function ChecklistsHome() {
@@ -29,35 +29,33 @@ export default function ChecklistsHome() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Today's Checklist</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Front desk / aesthetician open and close tasks.</p>
+      <h1 className="page-title">Today&apos;s Checklist</h1>
+      <p className="page-sub">Pick the part of your shift you&apos;re on.</p>
 
       {error && <p className="error-text">{error}</p>}
 
       {supported === false && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <p style={{ margin: 0, fontSize: 14 }}>
-            There's no daily checklist assigned to your role yet.
-          </p>
+        <div className="card tinted">
+          <p style={{ margin: 0, fontSize: 14 }}>There&apos;s no daily checklist assigned to your role.</p>
         </div>
       )}
 
-      {segments.length > 0 && (
-        <div className="grid">
-          {segments.map((s) => {
-            const meta = SEGMENT_LABEL[s.segment] ?? { label: s.segment, sub: "" };
-            return (
-              <a key={s.segment} href={`/checklists/${s.segment}`} className="tile">
-                {meta.label}
-                <span className="sub">{s.completedToday ? "Done today ✓" : meta.sub}</span>
-              </a>
-            );
-          })}
-        </div>
-      )}
+      <div className="stack">
+        {segments.map((s) => {
+          const meta = SEGMENT_LABEL[s.segment] ?? { label: s.segment, sub: "" };
+          return (
+            <a key={s.segment} href={`/checklists/${s.segment}`} className="list-row">
+              <span>
+                <div className="title">{meta.label}</div>
+                <div className="sub">{meta.sub}</div>
+              </span>
+              <span className={`badge${s.completedToday ? " success" : " gold"}`}>
+                {s.completedToday ? "Done today" : "Start"}
+              </span>
+            </a>
+          );
+        })}
+      </div>
     </div>
   );
 }

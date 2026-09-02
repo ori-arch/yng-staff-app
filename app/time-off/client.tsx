@@ -22,9 +22,9 @@ function fmtDate(iso: string) {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  pending: "#6b6b6b",
-  approved: "#1e7b34",
-  denied: "#b3261e",
+  pending: "var(--muted)",
+  approved: "var(--success)",
+  denied: "var(--danger)",
 };
 
 function RequestRow({ r, showName }: { r: MyRequest | AllRequest; showName: boolean }) {
@@ -34,7 +34,7 @@ function RequestRow({ r, showName }: { r: MyRequest | AllRequest; showName: bool
         <span style={{ fontWeight: 600, fontSize: 14 }}>
           {showName ? (r as AllRequest).employeeName : `${fmtDate(r.startDate)} – ${fmtDate(r.endDate)}`}
         </span>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: STATUS_COLOR[r.status] ?? "#6b6b6b", textTransform: "capitalize" }}>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: STATUS_COLOR[r.status] ?? "var(--muted)", textTransform: "capitalize" }}>
           {r.status}
         </span>
       </div>
@@ -43,7 +43,7 @@ function RequestRow({ r, showName }: { r: MyRequest | AllRequest; showName: bool
           {fmtDate(r.startDate)} – {fmtDate(r.endDate)}
         </p>
       )}
-      <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "#6b6b6b" }}>
+      <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
         {r.hoursRequested} hrs{r.reason ? ` · ${r.reason}` : ""}
       </p>
     </div>
@@ -159,23 +159,12 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
   }
 
   const pending = allRequests.filter((r) => r.status === "pending");
+  const [showOwn, setShowOwn] = useState(false);
 
-  return (
-    <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Time Off</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Request time off and check your balance.</p>
-
-      {error && <p className="error-text">{error}</p>}
-
-      {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
-      ) : (
-        <>
+  const requestSection = (
+    <>
           <div className="card" style={{ marginTop: 8, textAlign: "center" }}>
-            <p style={{ margin: 0, fontSize: 12.5, color: "#6b6b6b" }}>Your balance</p>
+            <p style={{ margin: 0, fontSize: 12.5, color: "var(--muted)" }}>Your balance</p>
             <p style={{ margin: "2px 0 0", fontSize: 26, fontWeight: 700 }}>{balance} hrs</p>
           </div>
 
@@ -186,13 +175,13 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
               />
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+                style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
               />
             </div>
             <input
@@ -202,17 +191,17 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
               placeholder="Hours requested"
               value={hours}
               onChange={(e) => setHours(e.target.value)}
-              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", marginTop: 8 }}
+              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)", marginTop: 8 }}
             />
             <input
               type="text"
               placeholder="Reason (optional)"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", marginTop: 8 }}
+              style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)", marginTop: 8 }}
             />
             <button
-              className="primary"
+              className="btn"
               style={{ marginTop: 10 }}
               disabled={!startDate || !endDate || !hours || submitting}
               onClick={submitRequest}
@@ -221,18 +210,34 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
             </button>
           </div>
 
+    </>
+  );
+
+  return (
+    <div className="container">
+      <h1 className="page-title">Time Off</h1>
+      <p className="page-sub">{isManager ? "Approve requests and manage balances." : "Request time off and check your balance."}</p>
+
+      {error && <p className="error-text">{error}</p>}
+
+      {loading ? (
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
+      ) : (
+        <>
+          {!isManager && requestSection}
+
           {isManager && (
             <>
               <div className="section-label">Pending approvals</div>
               {pending.length === 0 ? (
-                <p style={{ color: "#6b6b6b", fontSize: 13.5 }}>Nothing pending.</p>
+                <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Nothing pending.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {pending.map((r) => (
                     <div key={r.id} className="card">
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                         <span style={{ fontWeight: 600, fontSize: 14 }}>{r.employeeName}</span>
-                        <span style={{ fontSize: 12.5, color: "#6b6b6b" }}>{r.hoursRequested} hrs</span>
+                        <span style={{ fontSize: 12.5, color: "var(--muted)" }}>{r.hoursRequested} hrs</span>
                       </div>
                       <p style={{ margin: "4px 0 8px", fontSize: 13 }}>
                         {fmtDate(r.startDate)} – {fmtDate(r.endDate)}
@@ -240,7 +245,7 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                       </p>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
-                          className="primary"
+                          className="btn"
                           style={{ flex: 1 }}
                           disabled={deciding === r.id}
                           onClick={() => decide(r.id, "approve")}
@@ -248,7 +253,7 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                           Approve
                         </button>
                         <button
-                          style={{ flex: 1, borderRadius: 10, border: "1px solid #b3261e", color: "#b3261e", background: "white" }}
+                          style={{ flex: 1, borderRadius: 10, border: "1px solid var(--danger)", color: "var(--danger)", background: "white" }}
                           disabled={deciding === r.id}
                           onClick={() => decide(r.id, "deny")}
                         >
@@ -276,18 +281,18 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                           placeholder="+/- hours"
                           value={adjustHours}
                           onChange={(e) => setAdjustHours(e.target.value)}
-                          style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13 }}
+                          style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13 }}
                         />
                         <input
                           type="text"
                           placeholder="Note (optional)"
                           value={adjustNote}
                           onChange={(e) => setAdjustNote(e.target.value)}
-                          style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13, marginTop: 6 }}
+                          style={{ width: "100%", padding: 8, borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13, marginTop: 6 }}
                         />
                         <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                           <button
-                            className="primary"
+                            className="btn"
                             style={{ flex: 1, padding: 8, fontSize: 13 }}
                             disabled={!adjustHours || adjusting}
                             onClick={() => submitAdjustment(b.employeeId)}
@@ -295,7 +300,7 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                             Save
                           </button>
                           <button
-                            style={{ flex: 1, padding: 8, fontSize: 13, borderRadius: 10, border: "1px solid #ddd", background: "white" }}
+                            style={{ flex: 1, padding: 8, fontSize: 13, borderRadius: 10, border: "1px solid var(--border-strong)", background: "white" }}
                             onClick={() => { setAdjustFor(null); setAdjustHours(""); setAdjustNote(""); }}
                           >
                             Cancel
@@ -305,7 +310,7 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                     ) : (
                       <button
                         onClick={() => setAdjustFor(b.employeeId)}
-                        style={{ marginTop: 8, fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+                        style={{ marginTop: 8, fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
                       >
                         Adjust
                       </button>
@@ -316,13 +321,20 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
 
               <div className="section-label">All requests</div>
               {allRequests.length === 0 ? (
-                <p style={{ color: "#6b6b6b", fontSize: 13.5 }}>No requests yet.</p>
+                <p style={{ color: "var(--muted)", fontSize: 13.5 }}>No requests yet.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {allRequests.map((r) => (
                     <RequestRow key={r.id} r={r} showName />
                   ))}
                 </div>
+              )}
+
+              <div className="section-label">Your own time off</div>
+              {showOwn ? requestSection : (
+                <button className="btn outline" onClick={() => setShowOwn(true)}>
+                  Request time off for yourself
+                </button>
               )}
             </>
           )}
@@ -331,7 +343,7 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
             <>
               <div className="section-label">Your requests</div>
               {requests.length === 0 ? (
-                <p style={{ color: "#6b6b6b", fontSize: 13.5 }}>No requests yet.</p>
+                <p style={{ color: "var(--muted)", fontSize: 13.5 }}>No requests yet.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {requests.map((r) => (

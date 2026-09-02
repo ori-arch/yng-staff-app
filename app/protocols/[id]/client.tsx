@@ -46,18 +46,15 @@ export default function ProtocolDetail({ id, isManager }: { id: string; isManage
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/protocols" className="link-button">← Protocols</a>
-      </div>
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : error ? (
         <p className="error-text">{error}</p>
       ) : protocol ? (
         <>
-          <h1 style={{ fontSize: 20, fontWeight: 600 }}>{protocol.title}</h1>
-          <p style={{ color: "#6b6b6b", fontSize: 14 }}>
+          <h1 className="page-title">{protocol.title}</h1>
+          <p style={{ color: "var(--muted)", fontSize: 14 }}>
             {protocol.category ? `${protocol.category} · ` : ""}v{protocol.version}
             {protocol.uploadedByName ? ` · uploaded by ${protocol.uploadedByName}` : ""}
             {protocol.archived ? " · archived (superseded by a newer version)" : ""}
@@ -88,7 +85,7 @@ export default function ProtocolDetail({ id, isManager }: { id: string; isManage
 
           {history.length > 1 && (
             <>
-              <h2 style={{ fontSize: 15, fontWeight: 600, marginTop: 24 }}>Version history</h2>
+              <div className="section-label">Version history</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
                 {history.map((h) => (
                   <a
@@ -101,7 +98,7 @@ export default function ProtocolDetail({ id, isManager }: { id: string; isManage
                       v{h.version}
                       {h.id === protocol.id ? " (viewing)" : h.archived ? " (archived)" : " (current)"}
                     </span>
-                    <span style={{ fontSize: 12, color: "#6b6b6b" }}>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>
                       {fmtDate(h.createdAt)}
                       {h.uploadedByName ? ` · ${h.uploadedByName}` : ""}
                     </span>

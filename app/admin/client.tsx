@@ -50,7 +50,7 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 function inputStyle(extra?: object) {
-  return { padding: 8, borderRadius: 8, border: "1px solid #ddd", fontSize: 13, ...extra };
+  return { padding: 8, borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13, ...extra };
 }
 
 export default function Admin({ isOwner, myEmployeeId }: { isOwner: boolean; myEmployeeId: string }) {
@@ -59,29 +59,14 @@ export default function Admin({ isOwner, myEmployeeId }: { isOwner: boolean; myE
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Admin Panel</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Manage employees, rooms, checklists, and par levels.</p>
+      <h1 className="page-title">Admin Panel</h1>
+      <p className="page-sub">Manage employees, rooms, checklists, and par levels.</p>
 
       {error && <p className="error-text">{error}</p>}
 
-      <div style={{ display: "flex", gap: 6, marginTop: 8, marginBottom: 12, flexWrap: "wrap" }}>
+      <div className="tabs" style={{ marginBottom: 14 }}>
         {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            style={{
-              padding: "6px 12px",
-              borderRadius: 20,
-              border: "1px solid " + (tab === t.key ? "#111" : "#ddd"),
-              background: tab === t.key ? "#111" : "white",
-              color: tab === t.key ? "white" : "#111",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
+          <button key={t.key} className={tab === t.key ? "active" : ""} onClick={() => setTab(t.key)}>
             {t.label}
           </button>
         ))}
@@ -190,7 +175,7 @@ function EmployeesTab({
     }
   }
 
-  if (loading) return <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>;
+  if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
 
   return (
     <>
@@ -209,11 +194,11 @@ function EmployeesTab({
             <option value="aesthetician">Aesthetician</option>
             <option value="manager">Manager</option>
           </select>
-          <button className="primary" disabled={!newName.trim() || adding} onClick={addEmployee}>
+          <button className="btn" disabled={!newName.trim() || adding} onClick={addEmployee}>
             {adding ? "Adding…" : "Add"}
           </button>
         </div>
-        <p style={{ fontSize: 11.5, color: "#6b6b6b", margin: "8px 0 0" }}>
+        <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "8px 0 0" }}>
           New employees start with no PIN — they'll set one themselves the first time they tap their name and hit
           "Forgot?".
         </p>
@@ -226,9 +211,9 @@ function EmployeesTab({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
               <span style={{ fontWeight: 600, fontSize: 14 }}>
                 {e.name}
-                {e.is_owner && <span style={{ fontSize: 11, color: "#6b6b6b", fontWeight: 400 }}> · Owner</span>}
-                {e.is_admin && !e.is_owner && <span style={{ fontSize: 11, color: "#6b6b6b", fontWeight: 400 }}> · Admin</span>}
-                {!e.active && <span style={{ fontSize: 11, color: "#b3261e", fontWeight: 400 }}> · Inactive</span>}
+                {e.is_owner && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}> · Owner</span>}
+                {e.is_admin && !e.is_owner && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}> · Admin</span>}
+                {!e.active && <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 400 }}> · Inactive</span>}
               </span>
               <select
                 value={e.role}
@@ -247,7 +232,7 @@ function EmployeesTab({
                 <button
                   disabled={busyId === e.id}
                   onClick={() => update(e.id, { active: !e.active })}
-                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
                 >
                   {e.active ? "Deactivate" : "Reactivate"}
                 </button>
@@ -256,7 +241,7 @@ function EmployeesTab({
                 <button
                   disabled={busyId === e.id}
                   onClick={() => update(e.id, { isAdmin: !e.is_admin })}
-                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
                 >
                   {e.is_admin ? "Revoke Admin" : "Make Admin"}
                 </button>
@@ -267,7 +252,7 @@ function EmployeesTab({
                     setResetFor(resetFor === e.id ? null : e.id);
                     setResetPin("");
                   }}
-                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
                 >
                   Reset PIN
                 </button>
@@ -284,7 +269,7 @@ function EmployeesTab({
                   onChange={(ev) => setResetPin(ev.target.value.replace(/\D/g, ""))}
                   style={{ ...inputStyle(), flex: 1 }}
                 />
-                <button className="primary" style={{ padding: "6px 10px" }} disabled={busyId === e.id} onClick={() => submitReset(e.id)}>
+                <button className="btn" style={{ padding: "6px 10px" }} disabled={busyId === e.id} onClick={() => submitReset(e.id)}>
                   Save
                 </button>
               </div>
@@ -357,7 +342,7 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
     }
   }
 
-  if (loading) return <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>;
+  if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
 
   return (
     <>
@@ -371,7 +356,7 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
             onChange={(e) => setNewName(e.target.value)}
             style={{ ...inputStyle(), flex: 1 }}
           />
-          <button className="primary" disabled={!newName.trim() || adding} onClick={addRoom}>
+          <button className="btn" disabled={!newName.trim() || adding} onClick={addRoom}>
             {adding ? "Adding…" : "Add"}
           </button>
         </div>
@@ -383,12 +368,12 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
           <div key={r.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 14 }}>
               {r.name}
-              {!r.active && <span style={{ fontSize: 11, color: "#b3261e" }}> · Inactive</span>}
+              {!r.active && <span style={{ fontSize: 11, color: "var(--danger)" }}> · Inactive</span>}
             </span>
             <button
               disabled={busyId === r.id}
               onClick={() => toggleActive(r.id, r.active)}
-              style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+              style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
             >
               {r.active ? "Deactivate" : "Reactivate"}
             </button>
@@ -471,7 +456,7 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
     }
   }
 
-  if (loading) return <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>;
+  if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
 
   return (
     <>
@@ -485,7 +470,7 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
               {items.map((t) => (
                 <div key={t.id} className="card" style={{ opacity: t.active ? 1 : 0.55 }}>
                   <p style={{ margin: 0, fontSize: 13.5 }}>{t.item_text}</p>
-                  <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap", fontSize: 11.5, color: "#6b6b6b" }}>
+                  <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap", fontSize: 11.5, color: "var(--muted)" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <input
                         type="checkbox"
@@ -516,7 +501,7 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
                     <button
                       disabled={busyId === t.id}
                       onClick={() => toggle(t.id, "active", !t.active)}
-                      style={{ fontSize: 11.5, padding: "2px 6px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+                      style={{ fontSize: 11.5, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
                     >
                       {t.active ? "Deactivate" : "Reactivate"}
                     </button>
@@ -541,7 +526,7 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
                 Photo
               </label>
               <button
-                className="primary"
+                className="btn"
                 style={{ padding: "6px 10px" }}
                 disabled={!newText[key]?.trim() || adding === key}
                 onClick={() => addItem(g.role, g.segment)}
@@ -651,7 +636,7 @@ function ParLevelsTab({ setError }: { setError: (e: string | null) => void }) {
     }
   }
 
-  if (loading) return <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>;
+  if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
 
   return (
     <>
@@ -662,7 +647,7 @@ function ParLevelsTab({ setError }: { setError: (e: string | null) => void }) {
           <input type="text" placeholder="Unit (e.g. bottle)" value={newUnit} onChange={(e) => setNewUnit(e.target.value)} style={{ ...inputStyle(), flex: 1, minWidth: 90 }} />
           <input type="number" placeholder="Par level" value={newPar} onChange={(e) => setNewPar(e.target.value)} style={{ ...inputStyle(), width: 90 }} />
           <input type="number" placeholder="Current qty" value={newQty} onChange={(e) => setNewQty(e.target.value)} style={{ ...inputStyle(), width: 90 }} />
-          <button className="primary" disabled={!newName.trim() || adding} onClick={addItem}>
+          <button className="btn" disabled={!newName.trim() || adding} onClick={addItem}>
             {adding ? "Adding…" : "Add"}
           </button>
         </div>
@@ -676,32 +661,32 @@ function ParLevelsTab({ setError }: { setError: (e: string | null) => void }) {
               <span style={{ fontWeight: 600, fontSize: 14 }}>
                 {it.name}
                 {it.unit ? ` (${it.unit})` : ""}
-                {!it.active && <span style={{ fontSize: 11, color: "#b3261e", fontWeight: 400 }}> · Inactive</span>}
+                {!it.active && <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 400 }}> · Inactive</span>}
               </span>
               <button
                 disabled={busyId === it.id}
                 onClick={() => toggleActive(it.id, it.active)}
-                style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid #ddd", background: "white" }}
+                style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
               >
                 {it.active ? "Deactivate" : "Reactivate"}
               </button>
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 8, alignItems: "center" }}>
-              <label style={{ fontSize: 12, color: "#6b6b6b" }}>Par</label>
+              <label style={{ fontSize: 12, color: "var(--muted)" }}>Par</label>
               <input
                 type="number"
                 value={edits[it.id]?.par ?? ""}
                 onChange={(e) => setEdits((s) => ({ ...s, [it.id]: { ...s[it.id], par: e.target.value } }))}
                 style={{ ...inputStyle(), width: 70 }}
               />
-              <label style={{ fontSize: 12, color: "#6b6b6b" }}>Current</label>
+              <label style={{ fontSize: 12, color: "var(--muted)" }}>Current</label>
               <input
                 type="number"
                 value={edits[it.id]?.qty ?? ""}
                 onChange={(e) => setEdits((s) => ({ ...s, [it.id]: { ...s[it.id], qty: e.target.value } }))}
                 style={{ ...inputStyle(), width: 70 }}
               />
-              <button className="primary" style={{ padding: "6px 10px" }} disabled={busyId === it.id} onClick={() => save(it.id)}>
+              <button className="btn" style={{ padding: "6px 10px" }} disabled={busyId === it.id} onClick={() => save(it.id)}>
                 Save
               </button>
             </div>

@@ -38,24 +38,21 @@ export default function ProtocolsList({ isManager }: { isManager: boolean }) {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Protocols</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Treatment protocol library.</p>
+      <h1 className="page-title">Protocols</h1>
+      <p className="page-sub">Treatment protocol library.</p>
 
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search protocols…"
-          style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+          style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
         />
         {categories.length > 0 && (
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+            style={{ padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
           >
             <option value="">All categories</option>
             {categories.map((c) => (
@@ -72,18 +69,18 @@ export default function ProtocolsList({ isManager }: { isManager: boolean }) {
       )}
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14, marginTop: 16 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 16 }}>Loading…</p>
       ) : protocols.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14, marginTop: 16 }}>No protocols yet.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 16 }}>No protocols yet.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
           {protocols.map((p) => (
             <a key={p.id} href={`/protocols/${p.id}`} className="card" style={{ display: "block" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{p.title}</span>
-                <span style={{ fontSize: 12, color: "#6b6b6b" }}>v{p.version}</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>v{p.version}</span>
               </div>
-              <span style={{ fontSize: 12.5, color: "#6b6b6b" }}>
+              <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
                 {p.category ? `${p.category} · ` : ""}
                 {p.hasFile ? "File" : "Text"}
                 {p.uploadedByName ? ` · by ${p.uploadedByName}` : ""}

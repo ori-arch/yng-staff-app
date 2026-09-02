@@ -56,7 +56,7 @@ function PhotoField({
       ) : (
         <button
           onClick={() => ref.current?.click()}
-          style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 8, border: "1px dashed #999" }}
+          style={{ width: "100%", marginTop: 6, padding: 13, borderRadius: 12, border: "1px dashed var(--gold)", background: "var(--gold-soft)", color: "var(--gold-dark)", fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}
         >
           Take photo
         </button>
@@ -184,11 +184,8 @@ export default function RoomRestockingPage() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Room Restocking Log</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Log a pulled item and its replacement.</p>
+      <h1 className="page-title">Room Restocking Log</h1>
+      <p className="page-sub">Log a pulled item and its replacement.</p>
 
       {!signing ? (
         <div className="card" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -198,7 +195,7 @@ export default function RoomRestockingPage() {
               value={itemType}
               onChange={(e) => setItemType(e.target.value)}
               placeholder="e.g. Backbar, Retail"
-              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
             />
           </div>
           <div>
@@ -207,7 +204,7 @@ export default function RoomRestockingPage() {
               value={specificItem}
               onChange={(e) => setSpecificItem(e.target.value)}
               placeholder="e.g. Witch hazel"
-              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
             />
           </div>
           <div style={{ display: "flex", gap: 10 }}>
@@ -216,7 +213,7 @@ export default function RoomRestockingPage() {
               <select
                 value={roomRanOutId}
                 onChange={(e) => setRoomRanOutId(e.target.value)}
-                style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+                style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
               >
                 <option value="">Select…</option>
                 {rooms.map((r) => (
@@ -229,7 +226,7 @@ export default function RoomRestockingPage() {
               <select
                 value={roomRestockedId}
                 onChange={(e) => setRoomRestockedId(e.target.value)}
-                style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+                style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
               >
                 <option value="">Select…</option>
                 {rooms.map((r) => (
@@ -243,7 +240,7 @@ export default function RoomRestockingPage() {
             <input
               value={remainingQuantity}
               onChange={(e) => setRemainingQuantity(e.target.value)}
-              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
             />
           </div>
 
@@ -260,7 +257,7 @@ export default function RoomRestockingPage() {
                   onClick={() => c.set(!c.val)}
                   style={{ display: "flex", alignItems: "center", gap: 10, textAlign: "left", padding: 8, borderRadius: 8, border: "1px solid #eee" }}
                 >
-                  <span style={{ width: 18, height: 18, minWidth: 18, borderRadius: 5, border: "2px solid #1a1a1a", background: c.val ? "#1a1a1a" : "transparent" }} />
+                  <span style={{ width: 18, height: 18, minWidth: 18, borderRadius: 5, border: "2px solid var(--ink)", background: c.val ? "var(--ink)" : "transparent" }} />
                   <span style={{ fontSize: 14 }}>{c.label}</span>
                 </button>
               ))}
@@ -271,16 +268,16 @@ export default function RoomRestockingPage() {
           <PhotoField label="Photo of the replacement item" file={newItemPhoto} preview={newItemPreview} onChoose={(f) => { setNewItemPhoto(f); setNewItemPreview(URL.createObjectURL(f)); }} />
 
           {error && <p className="error-text">{error}</p>}
-          {justSubmitted && <p style={{ color: "#1a7a3a", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
+          {justSubmitted && <p style={{ color: "var(--success)", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
 
-          <button className="primary" onClick={tryOpenSign}>
+          <button className="btn" onClick={tryOpenSign}>
             Continue to Sign
           </button>
         </div>
       ) : (
         <div className="card" style={{ marginTop: 20, textAlign: "center" }}>
           <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Re-enter your PIN to sign</p>
-          <p style={{ fontSize: 12.5, color: "#6b6b6b", marginTop: 0 }}>This confirms the restocking entry above.</p>
+          <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 0 }}>This confirms the restocking entry above.</p>
           <div className="pin-dots">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className={`pin-dot ${i < pin.length ? "filled" : ""}`} />
@@ -295,17 +292,17 @@ export default function RoomRestockingPage() {
             <button onClick={() => pressDigit("0")} disabled={submitting}>0</button>
             <button onClick={() => setPin((p) => p.slice(0, -1))} disabled={submitting}>⌫</button>
           </div>
-          <button className="primary" style={{ marginTop: 12 }} disabled={pin.length < 4 || submitting} onClick={submit}>
+          <button className="btn" style={{ marginTop: 12 }} disabled={pin.length < 4 || submitting} onClick={submit}>
             {submitting ? "Submitting…" : "Confirm"}
           </button>
         </div>
       )}
 
-      <h2 style={{ fontSize: 15, fontWeight: 600, marginTop: 24 }}>Recent entries</h2>
+      <div className="section-label">Recent entries</div>
       {loadingLogs ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : logs.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>No entries yet.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>No entries yet.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
           {logs.map((l) => (
@@ -316,9 +313,9 @@ export default function RoomRestockingPage() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{l.specificItem}</span>
-                  <span style={{ fontSize: 12, color: "#6b6b6b" }}>{fmtDateTime(l.createdAt)}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{fmtDateTime(l.createdAt)}</span>
                 </div>
-                <span style={{ fontSize: 12.5, color: "#6b6b6b" }}>
+                <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
                   {l.employeeName ?? "Unknown"}
                   {l.roomRanOut ? ` · ran out: ${l.roomRanOut}` : ""}
                   {l.roomRestocked ? ` · restocked: ${l.roomRestocked}` : ""}

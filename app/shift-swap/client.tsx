@@ -18,14 +18,14 @@ type Swap = {
 type Coworker = { id: string; name: string; role: string };
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  pending_coworker: { label: "Awaiting coworker", color: "#6b6b6b" },
-  pending_owner: { label: "Awaiting manager", color: "#b3730f" },
-  approved: { label: "Approved", color: "#1e7b34" },
-  denied: { label: "Denied", color: "#b3261e" },
+  pending_coworker: { label: "Awaiting coworker", color: "var(--muted)" },
+  pending_owner: { label: "Awaiting manager", color: "var(--warn)" },
+  approved: { label: "Approved", color: "var(--success)" },
+  denied: { label: "Denied", color: "var(--danger)" },
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const s = STATUS_LABEL[status] ?? { label: status, color: "#6b6b6b" };
+  const s = STATUS_LABEL[status] ?? { label: status, color: "var(--muted)" };
   return <span style={{ fontSize: 11.5, fontWeight: 600, color: s.color }}>{s.label}</span>;
 }
 
@@ -109,49 +109,15 @@ export default function ShiftSwap({ isManager, myEmployeeId }: { isManager: bool
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Shift Swap</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Request to swap a shift with a coworker.</p>
+      <h1 className="page-title">Shift Swap</h1>
+      <p className="page-sub">{isManager ? "Approve swaps your team has already agreed on." : "Request to swap a shift with a coworker."}</p>
 
       {error && <p className="error-text">{error}</p>}
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : (
         <>
-          {!isManager && (
-            <div className="card" style={{ marginTop: 8 }}>
-              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0 }}>Request a swap</p>
-              <select
-                value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
-                style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
-              >
-                <option value="">Swap with…</option>
-                {coworkers.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              <textarea
-                placeholder="Which shift, and what you're proposing"
-                value={shiftDescription}
-                onChange={(e) => setShiftDescription(e.target.value)}
-                rows={3}
-                style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #ddd", fontFamily: "inherit", marginTop: 8 }}
-              />
-              <button
-                className="primary"
-                style={{ marginTop: 10 }}
-                disabled={!targetId || !shiftDescription.trim() || submitting}
-                onClick={submitRequest}
-              >
-                {submitting ? "Sending…" : "Send Request"}
-              </button>
-            </div>
-          )}
-
           {!isManager && myAwaitingResponse.length > 0 && (
             <>
               <div className="section-label">Needs your response</div>
@@ -161,13 +127,13 @@ export default function ShiftSwap({ isManager, myEmployeeId }: { isManager: bool
                     <p style={{ margin: 0, fontSize: 14 }}>
                       <strong>{s.requestingEmployeeName}</strong> wants to swap with you
                     </p>
-                    <p style={{ margin: "4px 0 8px", fontSize: 13, color: "#6b6b6b" }}>{s.shiftDescription}</p>
+                    <p style={{ margin: "4px 0 8px", fontSize: 13, color: "var(--muted)" }}>{s.shiftDescription}</p>
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button className="primary" style={{ flex: 1 }} disabled={acting === s.id} onClick={() => act(s.id, "accept")}>
+                      <button className="btn" style={{ flex: 1 }} disabled={acting === s.id} onClick={() => act(s.id, "accept")}>
                         Accept
                       </button>
                       <button
-                        style={{ flex: 1, borderRadius: 10, border: "1px solid #b3261e", color: "#b3261e", background: "white" }}
+                        style={{ flex: 1, borderRadius: 10, border: "1px solid var(--danger)", color: "var(--danger)", background: "white" }}
                         disabled={acting === s.id}
                         onClick={() => act(s.id, "decline")}
                       >
@@ -180,11 +146,42 @@ export default function ShiftSwap({ isManager, myEmployeeId }: { isManager: bool
             </>
           )}
 
+          {!isManager && (
+            <div className="card" style={{ marginTop: 8 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0 }}>Request a swap</p>
+              <select
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
+              >
+                <option value="">Swap with…</option>
+                {coworkers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <textarea
+                placeholder="Which shift, and what you're proposing"
+                value={shiftDescription}
+                onChange={(e) => setShiftDescription(e.target.value)}
+                rows={3}
+                style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: "inherit", marginTop: 8 }}
+              />
+              <button
+                className="btn"
+                style={{ marginTop: 10 }}
+                disabled={!targetId || !shiftDescription.trim() || submitting}
+                onClick={submitRequest}
+              >
+                {submitting ? "Sending…" : "Send Request"}
+              </button>
+            </div>
+          )}
+
           {isManager && (
             <>
               <div className="section-label">Awaiting your approval</div>
               {awaitingOwner.length === 0 ? (
-                <p style={{ color: "#6b6b6b", fontSize: 13.5 }}>Nothing pending.</p>
+                <p style={{ color: "var(--muted)", fontSize: 13.5 }}>Nothing pending.</p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {awaitingOwner.map((s) => (
@@ -192,13 +189,13 @@ export default function ShiftSwap({ isManager, myEmployeeId }: { isManager: bool
                       <p style={{ margin: 0, fontSize: 14 }}>
                         <strong>{s.requestingEmployeeName}</strong> ↔ <strong>{s.targetEmployeeName}</strong>
                       </p>
-                      <p style={{ margin: "4px 0 8px", fontSize: 13, color: "#6b6b6b" }}>{s.shiftDescription}</p>
+                      <p style={{ margin: "4px 0 8px", fontSize: 13, color: "var(--muted)" }}>{s.shiftDescription}</p>
                       <div style={{ display: "flex", gap: 8 }}>
-                        <button className="primary" style={{ flex: 1 }} disabled={acting === s.id} onClick={() => act(s.id, "approve")}>
+                        <button className="btn" style={{ flex: 1 }} disabled={acting === s.id} onClick={() => act(s.id, "approve")}>
                           Approve
                         </button>
                         <button
-                          style={{ flex: 1, borderRadius: 10, border: "1px solid #b3261e", color: "#b3261e", background: "white" }}
+                          style={{ flex: 1, borderRadius: 10, border: "1px solid var(--danger)", color: "var(--danger)", background: "white" }}
                           disabled={acting === s.id}
                           onClick={() => act(s.id, "deny")}
                         >
@@ -214,7 +211,7 @@ export default function ShiftSwap({ isManager, myEmployeeId }: { isManager: bool
 
           <div className="section-label">{isManager ? "All swap requests" : "Your swap history"}</div>
           {(isManager ? swaps : mySwaps).length === 0 ? (
-            <p style={{ color: "#6b6b6b", fontSize: 13.5 }}>No swap requests yet.</p>
+            <p style={{ color: "var(--muted)", fontSize: 13.5 }}>No swap requests yet.</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {(isManager ? swaps : mySwaps).map((s) => (
@@ -225,7 +222,7 @@ export default function ShiftSwap({ isManager, myEmployeeId }: { isManager: bool
                     </span>
                     <StatusBadge status={s.status} />
                   </div>
-                  <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b6b6b" }}>{s.shiftDescription}</p>
+                  <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>{s.shiftDescription}</p>
                 </div>
               ))}
             </div>

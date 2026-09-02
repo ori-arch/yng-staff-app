@@ -30,18 +30,15 @@ export default function WarningsList({ isManager }: { isManager: boolean }) {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Warning Notices</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>
+      <h1 className="page-title">Warning Notices</h1>
+      <p style={{ color: "var(--muted)", fontSize: 14 }}>
         {isManager ? "All warning notices issued to staff." : "Warning notices issued to you."}
       </p>
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : warnings.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>No warning notices{isManager ? "" : " — you're all clear"}.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>No warning notices{isManager ? "" : " — you're all clear"}.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
           {warnings.map((w) => (
@@ -54,14 +51,14 @@ export default function WarningsList({ isManager }: { isManager: boolean }) {
                   style={{
                     fontSize: 11.5,
                     fontWeight: 600,
-                    color: w.status === "acknowledged" ? "#1e7b34" : "#b3261e",
+                    color: w.status === "acknowledged" ? "var(--success)" : "var(--danger)",
                   }}
                 >
                   {w.status === "acknowledged" ? "Acknowledged" : "Needs acknowledgment"}
                 </span>
               </div>
-              <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b6b6b" }}>{w.violationDescription}</p>
-              <p style={{ margin: "4px 0 0", fontSize: 12, color: "#999" }}>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>{w.violationDescription}</p>
+              <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--muted)" }}>
                 {fmtDate(w.violationDate)} · {w.quarterLabel}
               </p>
             </a>

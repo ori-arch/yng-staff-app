@@ -67,16 +67,13 @@ export default function MessagesList({ myEmployeeId }: { myEmployeeId: string })
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Messages</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Broadcasts and direct messages.</p>
+      <h1 className="page-title">Messages</h1>
+      <p className="page-sub">Broadcasts and direct messages.</p>
 
       <button
-        className="tile primary-tile"
+        className="btn outline"
         onClick={openPicker}
-        style={{ marginTop: 12, marginBottom: 12, width: "100%", textAlign: "left" }}
+        style={{ marginBottom: 14 }}
       >
         + New Message
       </button>
@@ -85,7 +82,7 @@ export default function MessagesList({ myEmployeeId }: { myEmployeeId: string })
         <div className="card" style={{ marginBottom: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0 }}>Message who?</p>
           {employees.length === 0 ? (
-            <p style={{ color: "#6b6b6b", fontSize: 13 }}>Loading…</p>
+            <p style={{ color: "var(--muted)", fontSize: 13 }}>Loading…</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {employees.map((e) => (
@@ -97,18 +94,18 @@ export default function MessagesList({ myEmployeeId }: { myEmployeeId: string })
                     textAlign: "left",
                     padding: 10,
                     borderRadius: 8,
-                    border: "1px solid #ddd",
+                    border: "1px solid var(--border-strong)",
                     background: "white",
                   }}
                 >
-                  {e.name} <span style={{ color: "#6b6b6b", fontSize: 12 }}>({e.role.replace("_", " ")})</span>
+                  {e.name} <span style={{ color: "var(--muted)", fontSize: 12 }}>({e.role.replace("_", " ")})</span>
                 </button>
               ))}
             </div>
           )}
           <button
             onClick={() => setPicking(false)}
-            style={{ marginTop: 10, background: "none", border: "none", color: "#6b6b6b", fontSize: 13 }}
+            style={{ marginTop: 10, background: "none", border: "none", color: "var(--muted)", fontSize: 13 }}
           >
             Cancel
           </button>
@@ -116,9 +113,9 @@ export default function MessagesList({ myEmployeeId }: { myEmployeeId: string })
       )}
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : channels.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>No conversations yet.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>No conversations yet.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {channels.map((ch) => (
@@ -130,20 +127,19 @@ export default function MessagesList({ myEmployeeId }: { myEmployeeId: string })
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontWeight: 600, fontSize: 14.5 }}>
-                  {ch.type === "broadcast" ? "📢 " : ""}
-                  {ch.title}
+                  {ch.title}{ch.type === "broadcast" ? <span className="badge gold" style={{ marginLeft: 8 }}>Broadcast</span> : null}
                 </span>
                 {ch.lastMessage && (
-                  <span style={{ fontSize: 12, color: "#6b6b6b" }}>{fmtTime(ch.lastMessage.createdAt)}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{fmtTime(ch.lastMessage.createdAt)}</span>
                 )}
               </div>
               {ch.lastMessage ? (
-                <p style={{ margin: "4px 0 0", fontSize: 13, color: "#6b6b6b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {ch.lastMessage.senderName ? `${ch.lastMessage.senderName}: ` : ""}
                   {ch.lastMessage.body}
                 </p>
               ) : (
-                <p style={{ margin: "4px 0 0", fontSize: 13, color: "#999" }}>No messages yet.</p>
+                <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>No messages yet.</p>
               )}
             </a>
           ))}

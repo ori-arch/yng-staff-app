@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 type Employee = { id: string; name: string; role: string };
 
@@ -28,12 +27,10 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="container">
-      <img src="/icons/icon-192.png" alt="YNG" className="logo" />
-      <h1 style={{ textAlign: "center", fontSize: 18, fontWeight: 600, marginBottom: 4 }}>
-        Who's clocking in?
-      </h1>
-      <p style={{ textAlign: "center", color: "#6b6b6b", fontSize: 13.5, marginTop: 0 }}>
+    <div className="container" style={{ paddingTop: 48 }}>
+      <img src="/logo-black.png" alt="yng." style={{ width: 96, margin: "0 auto 28px", display: "block" }} />
+      <h1 style={{ textAlign: "center", fontSize: 24 }}>Who&apos;s clocking in?</h1>
+      <p className="page-sub" style={{ textAlign: "center", marginTop: 4 }}>
         Tap your name to continue
       </p>
 
@@ -41,11 +38,7 @@ export default function HomePage() {
 
       <div className="grid">
         {employees?.map((e) => (
-          <button
-            key={e.id}
-            className="tile"
-            onClick={() => router.push(`/login/${e.id}`)}
-          >
+          <button key={e.id} className="tile" onClick={() => router.push(`/login/${e.id}`)}>
             {e.name}
             <span className="sub">{ROLE_LABEL[e.role] ?? e.role}</span>
           </button>

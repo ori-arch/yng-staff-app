@@ -119,11 +119,8 @@ export default function EquipmentLogPage() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Equipment Log</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Log device use, cleaning, and condition checks.</p>
+      <h1 className="page-title">Equipment Log</h1>
+      <p className="page-sub">Log device use, cleaning, and condition checks.</p>
 
       <div className="card" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
         <div>
@@ -131,7 +128,7 @@ export default function EquipmentLogPage() {
           <select
             value={equipmentType}
             onChange={(e) => setEquipmentType(e.target.value)}
-            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
           >
             {DEVICE_OPTIONS.map((d) => (
               <option key={d} value={d}>{d}</option>
@@ -142,7 +139,7 @@ export default function EquipmentLogPage() {
               value={customType}
               onChange={(e) => setCustomType(e.target.value)}
               placeholder="Enter equipment name"
-              style={{ width: "100%", padding: 10, marginTop: 6, borderRadius: 8, border: "1px solid #ddd" }}
+              style={{ width: "100%", padding: 10, marginTop: 6, borderRadius: 8, border: "1px solid var(--border-strong)" }}
             />
           )}
         </div>
@@ -152,7 +149,7 @@ export default function EquipmentLogPage() {
           <input
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
-            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
           />
         </div>
 
@@ -185,7 +182,7 @@ export default function EquipmentLogPage() {
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 8, border: "1px dashed #999" }}
+              style={{ width: "100%", marginTop: 6, padding: 13, borderRadius: 12, border: "1px dashed var(--gold)", background: "var(--gold-soft)", color: "var(--gold-dark)", fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}
             >
               Take photo
             </button>
@@ -199,23 +196,23 @@ export default function EquipmentLogPage() {
             onChange={(e) => setRemarks(e.target.value)}
             placeholder="Anything unusual — noise, wear, damage, etc."
             rows={3}
-            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd", fontFamily: "inherit" }}
+            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: "inherit" }}
           />
         </div>
 
         {error && <p className="error-text">{error}</p>}
-        {justSubmitted && <p style={{ color: "#1a7a3a", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
+        {justSubmitted && <p style={{ color: "var(--success)", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
 
-        <button className="primary" onClick={submit} disabled={submitting}>
+        <button className="btn" onClick={submit} disabled={submitting}>
           {submitting ? "Saving…" : "Save Log"}
         </button>
       </div>
 
-      <h2 style={{ fontSize: 15, fontWeight: 600, marginTop: 24 }}>Recent logs</h2>
+      <div className="section-label">Recent logs</div>
       {loadingLogs ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : logs.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>No equipment logs yet.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>No equipment logs yet.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
           {logs.map((l) => (
@@ -226,14 +223,14 @@ export default function EquipmentLogPage() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                   <span style={{ fontSize: 14, fontWeight: 600 }}>{l.equipmentType}</span>
-                  <span style={{ fontSize: 12, color: "#6b6b6b" }}>{fmtDateTime(l.usedAt)}</span>
+                  <span style={{ fontSize: 12, color: "var(--muted)" }}>{fmtDateTime(l.usedAt)}</span>
                 </div>
-                <span style={{ fontSize: 12.5, color: "#6b6b6b" }}>
+                <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
                   {l.employeeName ?? "Unknown"}{l.clientName ? ` · ${l.clientName}` : ""}
                 </span>
                 <div style={{ fontSize: 12, marginTop: 2 }}>
-                  {l.receivedOperational === false && <span style={{ color: "#b3261e" }}>Not received operational. </span>}
-                  {l.cleanedProperly === false && <span style={{ color: "#b3261e" }}>Not cleaned properly. </span>}
+                  {l.receivedOperational === false && <span style={{ color: "var(--danger)" }}>Not received operational. </span>}
+                  {l.cleanedProperly === false && <span style={{ color: "var(--danger)" }}>Not cleaned properly. </span>}
                 </div>
                 {l.remarks && <p style={{ fontSize: 13, margin: "4px 0 0" }}>{l.remarks}</p>}
               </div>
@@ -264,9 +261,9 @@ function YesNoRow({
             flex: 1,
             padding: 8,
             borderRadius: 8,
-            border: value === true ? "2px solid #1a1a1a" : "1px solid #ddd",
-            background: value === true ? "#1a1a1a" : "transparent",
-            color: value === true ? "#fff" : "#1a1a1a",
+            border: value === true ? "2px solid var(--ink)" : "1px solid var(--border-strong)",
+            background: value === true ? "var(--ink)" : "transparent",
+            color: value === true ? "#fff" : "var(--ink)",
           }}
         >
           Yes
@@ -277,9 +274,9 @@ function YesNoRow({
             flex: 1,
             padding: 8,
             borderRadius: 8,
-            border: value === false ? "2px solid #b3261e" : "1px solid #ddd",
-            background: value === false ? "#b3261e" : "transparent",
-            color: value === false ? "#fff" : "#1a1a1a",
+            border: value === false ? "2px solid var(--danger)" : "1px solid var(--border-strong)",
+            background: value === false ? "var(--danger)" : "transparent",
+            color: value === false ? "#fff" : "var(--ink)",
           }}
         >
           No

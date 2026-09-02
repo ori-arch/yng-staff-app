@@ -33,6 +33,7 @@ export default function PinLoginPage() {
       return;
     }
     router.push("/dashboard");
+    router.refresh();
   }
 
   function press(digit: string) {
@@ -48,14 +49,18 @@ export default function PinLoginPage() {
 
   if (needsSetup) {
     return (
-      <div className="container">
-        <div className="card" style={{ marginTop: 60, textAlign: "center" }}>
-          <p>No PIN has been set for this account yet.</p>
-          <button className="primary" style={{ marginTop: 12 }} onClick={() => router.push(`/setup?employeeId=${id}`)}>
+      <div className="container" style={{ paddingTop: 48 }}>
+        <img src="/logo-black.png" alt="yng." style={{ width: 96, margin: "0 auto 28px", display: "block" }} />
+        <div className="card gold" style={{ textAlign: "center" }}>
+          <h2 style={{ fontSize: 20, marginBottom: 6 }}>Welcome</h2>
+          <p style={{ margin: "0 0 14px", color: "var(--muted)", fontSize: 14 }}>
+            No PIN has been set for this account yet. Choose one to get started.
+          </p>
+          <button className="btn" onClick={() => router.push(`/setup?employeeId=${id}`)}>
             Set up my PIN
           </button>
-          <button className="link-button" style={{ marginTop: 12 }} onClick={() => router.push("/")}>
-            Back
+          <button className="link-button" style={{ marginTop: 10 }} onClick={() => router.push("/")}>
+            Not you? Go back
           </button>
         </div>
       </div>
@@ -63,15 +68,12 @@ export default function PinLoginPage() {
   }
 
   return (
-    <div className="container">
-      <div className="top-bar">
-        <button className="link-button" onClick={() => router.push("/")}>
-          ← Back
-        </button>
-      </div>
-      <h1 style={{ textAlign: "center", fontSize: 18, fontWeight: 600, marginTop: 40 }}>
-        Enter your PIN
-      </h1>
+    <div className="container" style={{ paddingTop: 20 }}>
+      <button className="back-link" onClick={() => router.push("/")}>
+        ‹ Back
+      </button>
+      <img src="/logo-black.png" alt="yng." style={{ width: 84, margin: "20px auto 24px", display: "block" }} />
+      <h1 style={{ textAlign: "center", fontSize: 22 }}>Enter your PIN</h1>
 
       <div className="pin-dots">
         {Array.from({ length: PIN_LENGTH }).map((_, i) => (
@@ -87,11 +89,11 @@ export default function PinLoginPage() {
             {d}
           </button>
         ))}
-        <button onClick={() => router.push(`/setup?employeeId=${id}`)} style={{ fontSize: 13 }}>
+        <button className="soft" onClick={() => router.push(`/setup?employeeId=${id}`)}>
           Forgot?
         </button>
         <button onClick={() => press("0")}>0</button>
-        <button onClick={backspace}>⌫</button>
+        <button className="soft" onClick={backspace} style={{ fontSize: 18 }}>⌫</button>
       </div>
     </div>
   );

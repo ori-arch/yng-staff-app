@@ -21,9 +21,9 @@ function todayStr() {
 }
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
-  done: { bg: "#e6f4ea", fg: "#1e7b34", label: "Done" },
-  missed: { bg: "#fbe7e7", fg: "#b3261e", label: "Missed" },
-  pending: { bg: "#f1f1f1", fg: "#6b6b6b", label: "Pending" },
+  done: { bg: "var(--success-soft)", fg: "var(--success)", label: "Done" },
+  missed: { bg: "var(--danger-soft)", fg: "var(--danger)", label: "Missed" },
+  pending: { bg: "var(--surface)", fg: "var(--muted)", label: "Pending" },
 };
 
 export default function ComplianceDashboard() {
@@ -79,11 +79,8 @@ export default function ComplianceDashboard() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Compliance</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Checklist completion by employee and day.</p>
+      <h1 className="page-title">Compliance</h1>
+      <p className="page-sub">Checklist completion by employee and day.</p>
 
       <div style={{ margin: "12px 0" }}>
         <input
@@ -91,22 +88,22 @@ export default function ComplianceDashboard() {
           value={date}
           max={todayStr()}
           onChange={(e) => setDate(e.target.value)}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ddd" }}
+          style={{ padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
         />
       </div>
 
       {error && <p className="error-text">{error}</p>}
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>No checklist-eligible employees found.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>No checklist-eligible employees found.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {rows.map((row) => (
             <div key={row.employeeId} className="card">
               <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 8 }}>
-                {row.name} <span style={{ color: "#6b6b6b", fontWeight: 400, fontSize: 12.5 }}>({row.role.replace("_", " ")})</span>
+                {row.name} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}>({row.role.replace("_", " ")})</span>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {row.segments.map((seg) => {
@@ -135,8 +132,8 @@ export default function ComplianceDashboard() {
                               fontSize: 11.5,
                               padding: "4px 8px",
                               borderRadius: 6,
-                              border: "1px solid #b3261e",
-                              color: "#b3261e",
+                              border: "1px solid var(--danger)",
+                              color: "var(--danger)",
                               background: "white",
                             }}
                           >
@@ -146,7 +143,7 @@ export default function ComplianceDashboard() {
                         {seg.warning && (
                           <a
                             href={`/warnings/${seg.warning.id}`}
-                            style={{ fontSize: 11.5, color: "#6b6b6b", textDecoration: "underline" }}
+                            style={{ fontSize: 11.5, color: "var(--muted)", textDecoration: "underline" }}
                           >
                             {seg.warning.status === "acknowledged" ? "Warning acknowledged" : "Warning issued"}
                           </a>

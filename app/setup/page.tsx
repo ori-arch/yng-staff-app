@@ -59,9 +59,11 @@ function SetupPinForm() {
   if (done) {
     return (
       <div className="container">
-        <div className="card" style={{ marginTop: 60, textAlign: "center" }}>
-          <p>PIN set! You can log in now.</p>
-          <button className="primary" style={{ marginTop: 12 }} onClick={() => router.push(`/login/${employeeId}`)}>
+        <div className="done-state">
+          <div className="ring">✓</div>
+          <h2>PIN saved</h2>
+          <p>You can log in now.</p>
+          <button className="btn" onClick={() => router.push(`/login/${employeeId}`)}>
             Continue to login
           </button>
         </div>
@@ -71,9 +73,10 @@ function SetupPinForm() {
 
   return (
     <div className="container">
-      <h1 style={{ fontSize: 18, fontWeight: 600, marginTop: 40 }}>Set your PIN</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 13.5 }}>
-        Choose a 4–6 digit PIN you'll use to log in on the shift phone.
+      <img src="/logo-black.png" alt="yng." style={{ width: 84, margin: "28px auto 24px", display: "block" }} />
+      <h1 style={{ textAlign: "center", fontSize: 22 }}>Set your PIN</h1>
+      <p className="page-sub" style={{ textAlign: "center" }}>
+        Choose a 4–6 digit PIN you&apos;ll use to log in.
       </p>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16 }}>
         <input
@@ -82,8 +85,7 @@ function SetupPinForm() {
           placeholder="New PIN"
           value={newPin}
           onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          className="card"
-          style={{ fontSize: 18, padding: 14, textAlign: "center" }}
+          style={{ fontSize: 20, padding: 14, textAlign: "center", letterSpacing: "0.3em" }}
         />
         <input
           type="password"
@@ -91,11 +93,10 @@ function SetupPinForm() {
           placeholder="Confirm PIN"
           value={confirmPin}
           onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
-          className="card"
-          style={{ fontSize: 18, padding: 14, textAlign: "center" }}
+          style={{ fontSize: 20, padding: 14, textAlign: "center", letterSpacing: "0.3em" }}
         />
         {error && <p className="error-text">{error}</p>}
-        <button className="primary" type="submit">
+        <button className="btn" type="submit">
           Save PIN
         </button>
       </form>

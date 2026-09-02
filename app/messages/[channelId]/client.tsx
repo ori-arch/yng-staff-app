@@ -74,21 +74,18 @@ export default function ThreadView({ channelId }: { channelId: string }) {
   }
 
   return (
-    <div className="container" style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <div className="top-bar">
-        <a href="/messages" className="link-button">← Messages</a>
-      </div>
+    <div className="container" style={{ display: "flex", flexDirection: "column", minHeight: "calc(100dvh - var(--header-h))", paddingBottom: 16 }}>
       {channelType === "broadcast" && (
-        <p style={{ color: "#6b6b6b", fontSize: 13, marginTop: -4 }}>📢 All Staff — visible to everyone</p>
+        <p style={{ color: "var(--muted)", fontSize: 13, margin: "2px 0 0" }}><span className="badge gold">All Staff</span> &nbsp;visible to everyone</p>
       )}
 
       {error && <p className="error-text">{error}</p>}
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8, marginTop: 8, marginBottom: 12 }}>
         {loading ? (
-          <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+          <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
         ) : messages.length === 0 ? (
-          <p style={{ color: "#6b6b6b", fontSize: 14 }}>No messages yet — say hello.</p>
+          <p style={{ color: "var(--muted)", fontSize: 14 }}>No messages yet — say hello.</p>
         ) : (
           messages.map((m) => (
             <div
@@ -96,9 +93,10 @@ export default function ThreadView({ channelId }: { channelId: string }) {
               style={{
                 alignSelf: m.isMe ? "flex-end" : "flex-start",
                 maxWidth: "80%",
-                background: m.isMe ? "#111" : "#f1f1f1",
-                color: m.isMe ? "white" : "#111",
-                borderRadius: 12,
+                background: m.isMe ? "var(--ink)" : m.senderName === "Alert" ? "var(--gold-soft)" : "var(--surface)",
+                color: m.isMe ? "white" : "var(--ink)",
+                border: m.senderName === "Alert" ? "1px solid var(--gold-line)" : "1px solid var(--border)",
+                borderRadius: 14,
                 padding: "8px 12px",
               }}
             >
@@ -114,7 +112,7 @@ export default function ThreadView({ channelId }: { channelId: string }) {
       </div>
 
       {canPost ? (
-        <div style={{ display: "flex", gap: 8, position: "sticky", bottom: 12 }}>
+        <div style={{ display: "flex", gap: 8, position: "sticky", bottom: 12, background: "#fff", paddingTop: 8 }}>
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -126,14 +124,14 @@ export default function ThreadView({ channelId }: { channelId: string }) {
             }}
             placeholder="Type a message…"
             rows={1}
-            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #ddd", fontFamily: "inherit", resize: "none" }}
+            style={{ flex: 1, resize: "none", borderRadius: 14 }}
           />
-          <button className="primary" onClick={send} disabled={sending || !draft.trim()} style={{ width: "auto", padding: "0 16px" }}>
+          <button className="btn" onClick={send} disabled={sending || !draft.trim()} style={{ width: "auto", padding: "0 18px", borderRadius: 14 }}>
             Send
           </button>
         </div>
       ) : (
-        <p style={{ color: "#6b6b6b", fontSize: 13, textAlign: "center" }}>
+        <p style={{ color: "var(--muted)", fontSize: 13, textAlign: "center" }}>
           Only managers can post to All Staff.
         </p>
       )}

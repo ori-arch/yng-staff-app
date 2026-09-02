@@ -45,11 +45,8 @@ export default function NewProtocolForm() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/protocols" className="link-button">← Protocols</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>New / Update Protocol</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>
+      <h1 className="page-title">New / Update Protocol</h1>
+      <p style={{ color: "var(--muted)", fontSize: 14 }}>
         If the title matches an existing protocol, the old version is archived (not deleted) and this becomes the new current version.
       </p>
 
@@ -60,7 +57,7 @@ export default function NewProtocolForm() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Dermaplaning Aftercare"
-            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
           />
         </div>
         <div>
@@ -69,7 +66,7 @@ export default function NewProtocolForm() {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="e.g. Skincare, Devices"
-            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd" }}
+            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)" }}
           />
         </div>
         <div>
@@ -78,7 +75,7 @@ export default function NewProtocolForm() {
             value={bodyText}
             onChange={(e) => setBodyText(e.target.value)}
             rows={6}
-            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd", fontFamily: "inherit" }}
+            style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: "inherit" }}
           />
         </div>
         <div>
@@ -92,7 +89,7 @@ export default function NewProtocolForm() {
           />
           <button
             onClick={() => fileRef.current?.click()}
-            style={{ width: "100%", marginTop: 6, padding: 10, borderRadius: 8, border: "1px dashed #999" }}
+            style={{ width: "100%", marginTop: 6, padding: 13, borderRadius: 12, border: "1px dashed var(--gold)", background: "var(--gold-soft)", color: "var(--gold-dark)", fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}
           >
             {file ? file.name : "Choose file"}
           </button>
@@ -100,7 +97,7 @@ export default function NewProtocolForm() {
 
         {error && <p className="error-text">{error}</p>}
 
-        <button className="primary" onClick={submit} disabled={submitting}>
+        <button className="btn" onClick={submit} disabled={submitting}>
           {submitting ? "Saving…" : "Save Protocol"}
         </button>
       </div>

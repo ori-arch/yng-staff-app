@@ -14,7 +14,20 @@ type Item = {
   photoUrl: string | null;
 };
 
-const SEGMENT_TITLE: Record<string, string> = { open: "Opening Checklist", close: "Closing Checklist" };
+const SEGMENT_TITLE: Record<string, string> = { open: "Opening", close: "Closing" };
+const SEGMENT_SUB: Record<string, string> = {
+  open: "Tap each task as you finish it. Sign at the end.",
+  close: "Tap each task as you finish it. Sign at the end.",
+};
+
+function CameraIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
+  );
+}
 
 export default function ChecklistSegmentPage() {
   const { segment } = useParams<{ segment: string }>();
@@ -23,6 +36,7 @@ export default function ChecklistSegmentPage() {
   const [items, setItems] = useState<Item[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [alreadyDone, setAlreadyDone] = useState<string | null>(null);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [signing, setSigning] = useState(false);
   const [pin, setPin] = useState("");
@@ -32,23 +46,30 @@ export default function ChecklistSegmentPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingPhotoItemId = useRef<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/checklists/${segment}`)
+  function load(again = false) {
+    setLoading(true);
+    fetch(`/api/checklists/${segment}${again ? "?again=1" : ""}`)
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setError(data.error);
+        else if (data.alreadyCompleted) setAlreadyDone(data.completedAt);
         else {
+          setAlreadyDone(null);
           setSubmissionId(data.submissionId);
           setItems(data.items);
         }
       })
       .catch(() => setError("Could not load this checklist. Check your connection."))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segment]);
 
   async function toggleItem(item: Item) {
     if (item.requiresPhoto && !item.completed && !item.photoUrl) {
-      // Needs a photo before it can be checked off — open the camera instead.
       pendingPhotoItemId.current = item.submissionItemId;
       fileInputRef.current?.click();
       return;
@@ -58,6 +79,7 @@ export default function ChecklistSegmentPage() {
 
   async function saveItem(submissionItemId: string, completed: boolean, photo?: File) {
     setBusyItemId(submissionItemId);
+    setError(null);
     const form = new FormData();
     form.set("submissionItemId", submissionItemId);
     form.set("completed", String(completed));
@@ -88,7 +110,9 @@ export default function ChecklistSegmentPage() {
     if (file && itemId) saveItem(itemId, true, file);
   }
 
-  const allComplete = items.length > 0 && items.every((i) => i.completed);
+  const doneCount = items.filter((i) => i.completed).length;
+  const remaining = items.length - doneCount;
+  const allComplete = items.length > 0 && remaining === 0;
 
   function pressDigit(d: string) {
     setSignError(null);
@@ -111,24 +135,41 @@ export default function ChecklistSegmentPage() {
         setPin("");
         return;
       }
+      setSigning(false);
       setDone(true);
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (loading) {
-    return <div className="container"><p style={{ textAlign: "center", marginTop: 60 }}>Loading…</p></div>;
-  }
+  const title = SEGMENT_TITLE[segment] ?? segment;
 
-  if (done) {
+  if (loading) {
     return (
       <div className="container">
-        <div className="card" style={{ marginTop: 60, textAlign: "center" }}>
-          <p>Checklist submitted and signed. Nice work!</p>
-          <button className="primary" style={{ marginTop: 12 }} onClick={() => router.push("/dashboard")}>
-            Back to Dashboard
+        <p className="empty">Loading…</p>
+      </div>
+    );
+  }
+
+  if (done || alreadyDone) {
+    const when = alreadyDone
+      ? new Date(alreadyDone).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      : null;
+    return (
+      <div className="container">
+        <div className="done-state">
+          <div className="ring">✓</div>
+          <h2>{title} signed off</h2>
+          <p>{when ? `Submitted today at ${when}.` : "Submitted and signed. Nice work."}</p>
+          <button className="btn" onClick={() => router.push("/dashboard")}>
+            Back to Home
           </button>
+          {alreadyDone && (
+            <button className="btn ghost" style={{ marginTop: 6 }} onClick={() => load(true)}>
+              Start another {title.toLowerCase()} for a second shift
+            </button>
+          )}
         </div>
       </div>
     );
@@ -136,10 +177,17 @@ export default function ChecklistSegmentPage() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/checklists" className="link-button">← Checklists</a>
+      <h1 className="page-title">{title}</h1>
+      <p className="page-sub">{SEGMENT_SUB[segment] ?? ""}</p>
+
+      <div className="progress">
+        <div className="bar">
+          <span style={{ width: `${items.length ? (doneCount / items.length) * 100 : 0}%` }} />
+        </div>
+        <span>
+          {doneCount}/{items.length}
+        </span>
       </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>{SEGMENT_TITLE[segment] ?? segment}</h1>
 
       <input
         ref={fileInputRef}
@@ -152,84 +200,69 @@ export default function ChecklistSegmentPage() {
 
       {error && <p className="error-text">{error}</p>}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+      <div className="stack" style={{ gap: 8 }}>
         {items.map((item) => (
           <button
             key={item.submissionItemId}
-            className="card"
+            className={`check-row${item.completed ? " done" : ""}${item.requiresPhoto ? " needs-photo" : ""}`}
             onClick={() => toggleItem(item)}
             disabled={busyItemId === item.submissionItemId}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 12,
-              textAlign: "left",
-              cursor: "pointer",
-              opacity: busyItemId === item.submissionItemId ? 0.6 : 1,
-            }}
           >
-            <span
-              style={{
-                width: 20,
-                height: 20,
-                minWidth: 20,
-                borderRadius: 6,
-                border: "2px solid #1a1a1a",
-                background: item.completed ? "#1a1a1a" : "transparent",
-                marginTop: 2,
-              }}
-            />
-            <span style={{ flex: 1 }}>
-              <span style={{ fontSize: 14.5 }}>{item.itemText}</span>
-              <br />
-              <span style={{ fontSize: 12, color: "#6b6b6b" }}>
-                {item.requiresPhoto && (item.photoUrl ? "Photo attached ✓" : "Photo required — tap to take one")}
-                {item.firstShiftOnly && !item.requiresPhoto && "First shift only"}
-                {item.lastShiftOnly && !item.requiresPhoto && "Last shift only"}
-              </span>
+            <span className="check-box">{item.completed ? "✓" : item.requiresPhoto ? <CameraIcon /> : ""}</span>
+            <span className="check-text">
+              {item.itemText}
+              {item.requiresPhoto && !item.completed && <span className="check-meta">Photo required — tap to open camera</span>}
+              {!item.requiresPhoto && item.firstShiftOnly && <span className="check-meta">First shift of the day only</span>}
+              {!item.requiresPhoto && item.lastShiftOnly && <span className="check-meta">Last shift of the day only</span>}
             </span>
+            {item.photoUrl && <img src={item.photoUrl} alt="" className="check-thumb" />}
           </button>
         ))}
       </div>
 
-      {allComplete && !signing && (
-        <button className="primary" style={{ marginTop: 20 }} onClick={() => setSigning(true)}>
-          Submit &amp; Sign
-        </button>
-      )}
+      <div className="sticky-footer">
+        <div className="sticky-footer-inner">
+          <button className="btn" disabled={!allComplete} onClick={() => setSigning(true)}>
+            {allComplete ? "Sign & Submit" : `${remaining} task${remaining === 1 ? "" : "s"} left`}
+          </button>
+        </div>
+      </div>
 
       {signing && (
-        <div className="card" style={{ marginTop: 20, textAlign: "center" }}>
-          <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>Re-enter your PIN to sign</p>
-          <p style={{ fontSize: 12.5, color: "#6b6b6b", marginTop: 0 }}>
-            This confirms you completed every step above.
-          </p>
-          <div className="pin-dots">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className={`pin-dot ${i < pin.length ? "filled" : ""}`} />
-            ))}
-          </div>
-          {signError && <p className="error-text">{signError}</p>}
-          <div className="keypad">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-              <button key={d} onClick={() => pressDigit(d)} disabled={submitting}>
-                {d}
+        <div className="sheet-backdrop" onClick={() => { setSigning(false); setPin(""); }}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle" />
+            <h2 style={{ fontSize: 20, textAlign: "center" }}>Sign with your PIN</h2>
+            <p style={{ fontSize: 13, color: "var(--muted)", textAlign: "center", margin: "4px 0 0" }}>
+              This confirms you completed every task above.
+            </p>
+            <div className="pin-dots">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className={`pin-dot ${i < pin.length ? "filled" : ""}`} />
+              ))}
+            </div>
+            {signError && <p className="error-text">{signError}</p>}
+            <div className="keypad">
+              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+                <button key={d} onClick={() => pressDigit(d)} disabled={submitting}>
+                  {d}
+                </button>
+              ))}
+              <button className="soft" onClick={() => { setSigning(false); setPin(""); }}>
+                Cancel
               </button>
-            ))}
-            <button onClick={() => { setSigning(false); setPin(""); }} style={{ fontSize: 13 }}>
-              Cancel
+              <button onClick={() => pressDigit("0")} disabled={submitting}>0</button>
+              <button className="soft" onClick={() => setPin((p) => p.slice(0, -1))} disabled={submitting}>⌫</button>
+            </div>
+            <button
+              className="btn"
+              style={{ marginTop: 14 }}
+              disabled={pin.length < 4 || submitting}
+              onClick={confirmSignature}
+            >
+              {submitting ? "Submitting…" : "Confirm & Submit"}
             </button>
-            <button onClick={() => pressDigit("0")} disabled={submitting}>0</button>
-            <button onClick={() => setPin((p) => p.slice(0, -1))} disabled={submitting}>⌫</button>
           </div>
-          <button
-            className="primary"
-            style={{ marginTop: 12 }}
-            disabled={pin.length < 4 || submitting}
-            onClick={confirmSignature}
-          >
-            {submitting ? "Submitting…" : "Confirm"}
-          </button>
         </div>
       )}
     </div>

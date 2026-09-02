@@ -77,14 +77,11 @@ export default function RestockRunnerPage() {
 
   return (
     <div className="container">
-      <div className="top-bar">
-        <a href="/dashboard" className="link-button">← Dashboard</a>
-      </div>
-      <h1 style={{ fontSize: 20, fontWeight: 600 }}>Restock Runner Duties</h1>
-      <p style={{ color: "#6b6b6b", fontSize: 14 }}>Bathroom cabinet + loft stock check.</p>
+      <h1 className="page-title">Restock Runner Duties</h1>
+      <p className="page-sub">Bathroom cabinet + loft stock check.</p>
 
       {loading ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>Loading…</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : (
         <div className="card" style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -108,8 +105,8 @@ export default function RestockRunnerPage() {
                     height: 18,
                     minWidth: 18,
                     borderRadius: 5,
-                    border: "2px solid #1a1a1a",
-                    background: checked[step] ? "#1a1a1a" : "transparent",
+                    border: "2px solid var(--ink)",
+                    background: checked[step] ? "var(--ink)" : "transparent",
                   }}
                 />
                 <span style={{ fontSize: 14 }}>{step}</span>
@@ -124,32 +121,32 @@ export default function RestockRunnerPage() {
               onChange={(e) => setLowItemsText(e.target.value)}
               rows={3}
               placeholder={"e.g.\nWitch hazel\nCotton balls"}
-              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid #ddd", fontFamily: "inherit" }}
+              style={{ width: "100%", padding: 10, marginTop: 4, borderRadius: 8, border: "1px solid var(--border-strong)", fontFamily: "inherit" }}
             />
           </div>
 
           {error && <p className="error-text">{error}</p>}
-          {justSubmitted && <p style={{ color: "#1a7a3a", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
+          {justSubmitted && <p style={{ color: "var(--success)", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
 
-          <button className="primary" onClick={submit} disabled={submitting || !allChecked}>
+          <button className="btn" onClick={submit} disabled={submitting || !allChecked}>
             {submitting ? "Saving…" : "Submit"}
           </button>
         </div>
       )}
 
-      <h2 style={{ fontSize: 15, fontWeight: 600, marginTop: 24 }}>Recent duty logs</h2>
+      <div className="section-label">Recent duty logs</div>
       {logs.length === 0 ? (
-        <p style={{ color: "#6b6b6b", fontSize: 14 }}>No logs yet.</p>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>No logs yet.</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
           {logs.map((l) => (
             <div key={l.id} className="card">
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>{l.employeeName ?? "Unknown"}</span>
-                <span style={{ fontSize: 12, color: "#6b6b6b" }}>{fmtDate(l.logDate)}</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>{fmtDate(l.logDate)}</span>
               </div>
               {l.lowInventoryItems.length > 0 && (
-                <p style={{ fontSize: 12.5, color: "#b3261e", margin: "4px 0 0" }}>
+                <p style={{ fontSize: 12.5, color: "var(--danger)", margin: "4px 0 0" }}>
                   Low: {l.lowInventoryItems.join(", ")}
                 </p>
               )}
