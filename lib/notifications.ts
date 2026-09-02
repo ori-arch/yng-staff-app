@@ -3,7 +3,29 @@ import { sendPushToEmployees } from "@/lib/push";
 import { getSegmentStatus } from "@/lib/checklists";
 import { getSchedule } from "@/lib/schedule";
 
-export type NotificationType = "message" | "broadcast" | "task_due";
+export type NotificationType = "message" | "broadcast" | "task_due" | "approval_needed";
+
+/**
+ * Every active manager or admin (Ori, and anyone else with the manager role
+ * or the admin flag) — the audience for "something needs your attention"
+ * notifications: a new time-off request, a shift swap that's reached the
+ * manager-approval step, a newly issued warning. Best-effort: returns an
+ * empty list rather than throwing so a caller's own request never fails
+ * over this lookup.
+ */
+export async function getManagerRecipientIds(supabase: SupabaseClient): Promise<string[]> {
+  try {
+    const { data } = await supabase
+      .from("employees")
+      .select("id, role, is_admin")
+      .eq("active", true);
+    return (data ?? [])
+      .filter((e: any) => e.role === "manager" || e.is_admin === true)
+      .map((e: any) => e.id as string);
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Creates one notification row per recipient and best-effort pushes it to

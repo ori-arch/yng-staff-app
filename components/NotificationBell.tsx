@@ -6,7 +6,7 @@ import { enablePushNotifications, hasPushSubscription, pushSupported } from "@/l
 
 type Notification = {
   id: string;
-  type: "message" | "broadcast" | "task_due";
+  type: "message" | "broadcast" | "task_due" | "approval_needed";
   title: string;
   body: string | null;
   link: string | null;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getManagerRecipientIds, notifyEmployees } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const supabase = supabaseAdmin();
   const { data: swap, error: fetchError } = await supabase
     .from("shift_swap_requests")
-    .select("id, requesting_employee_id, target_employee_id, status")
+    .select("id, requesting_employee_id, target_employee_id, shift_description, status")
     .eq("id", params.id)
     .maybeSingle();
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
@@ -48,6 +49,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       })
       .eq("id", params.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    if (action === "accept") {
+      const managerIds = await getManagerRecipientIds(supabase);
+      const { data: names } = await supabase
+        .from("employees")
+        .select("id, name")
+        .in("id", [swap.requesting_employee_id, swap.target_employee_id]);
+      const nameOf = (id: string) => names?.find((n) => n.id === id)?.name ?? "Someone";
+      await notifyEmployees(supabase, managerIds, {
+        type: "approval_needed",
+        title: "Shift swap needs approval",
+        body: `${nameOf(swap.requesting_employee_id)} ↔ ${nameOf(swap.target_employee_id)}: ${swap.shift_description}`,
+        link: "/shift-swap",
+      });
+    }
+
     return NextResponse.json({ ok: true });
   }
 

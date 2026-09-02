@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { computeBalance } from "@/lib/time-off";
+import { getManagerRecipientIds, notifyEmployees } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -131,5 +132,14 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const managerIds = await getManagerRecipientIds(supabase);
+  await notifyEmployees(supabase, managerIds, {
+    type: "approval_needed",
+    title: "New time off request",
+    body: `${session.name} requested ${hours}h off, ${startDate} to ${endDate}.`,
+    link: "/time-off",
+  });
+
   return NextResponse.json({ ok: true, id: data.id });
 }

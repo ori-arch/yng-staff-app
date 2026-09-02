@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { quarterLabel } from "@/lib/warnings";
+import { getManagerRecipientIds, notifyEmployees } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -90,6 +91,15 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const managerIds = (await getManagerRecipientIds(supabase)).filter((id) => id !== session.employeeId);
+  const { data: warnedEmployee } = await supabase.from("employees").select("name").eq("id", employeeId).maybeSingle();
+  await notifyEmployees(supabase, managerIds, {
+    type: "approval_needed",
+    title: "Warning issued",
+    body: `${warnedEmployee?.name ?? "An employee"} — ${violationDescription.trim()}`,
+    link: `/warnings/${data.id}`,
+  });
 
   return NextResponse.json({ ok: true, id: data.id });
 }
