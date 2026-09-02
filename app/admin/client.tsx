@@ -98,6 +98,8 @@ function EmployeesTab({
   const [adding, setAdding] = useState(false);
   const [resetFor, setResetFor] = useState<string | null>(null);
   const [resetPin, setResetPin] = useState("");
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [justSet, setJustSet] = useState<{ id: string; pin: string; name: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   function load() {
@@ -152,13 +154,13 @@ function EmployeesTab({
     }
   }
 
-  async function submitReset(id: string) {
+  async function submitReset(id: string, name: string) {
     if (!resetPin || resetPin.length < 4) {
-      setError("New PIN must be at least 4 digits.");
+      setResetError("PIN must be at least 4 digits.");
       return;
     }
     setBusyId(id);
-    setError(null);
+    setResetError(null);
     try {
       const res = await fetch("/api/auth/set-pin", {
         method: "POST",
@@ -167,9 +169,10 @@ function EmployeesTab({
       });
       const data = await res.json();
       if (res.ok) {
+        setJustSet({ id, pin: resetPin, name });
         setResetFor(null);
         setResetPin("");
-      } else setError(data.error || "Could not reset PIN.");
+      } else setResetError(data.error || "Could not set PIN.");
     } finally {
       setBusyId(null);
     }
@@ -249,28 +252,68 @@ function EmployeesTab({
               {e.id !== myEmployeeId && (
                 <button
                   onClick={() => {
-                    setResetFor(resetFor === e.id ? null : e.id);
+                    const opening = resetFor !== e.id;
+                    setResetFor(opening ? e.id : null);
                     setResetPin("");
+                    setResetError(null);
+                    if (opening) setJustSet(null);
                   }}
                   style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
                 >
-                  Reset PIN
+                  Set PIN
                 </button>
               )}
             </div>
 
             {resetFor === e.id && (
-              <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="New PIN (4-6 digits)"
-                  value={resetPin}
-                  onChange={(ev) => setResetPin(ev.target.value.replace(/\D/g, ""))}
-                  style={{ ...inputStyle(), flex: 1 }}
-                />
-                <button className="btn" style={{ padding: "6px 10px" }} disabled={busyId === e.id} onClick={() => submitReset(e.id)}>
-                  Save
+              <div className="card tinted" style={{ marginTop: 10, padding: 12 }}>
+                <label style={{ fontSize: 12.5, fontWeight: 600, display: "block", marginBottom: 6 }}>
+                  New PIN for {e.name} (4–6 digits)
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    placeholder="e.g. 4821"
+                    value={resetPin}
+                    onChange={(ev) => setResetPin(ev.target.value.replace(/\D/g, "").slice(0, 6))}
+                    style={{
+                      flex: 1,
+                      fontSize: 22,
+                      letterSpacing: "0.3em",
+                      textAlign: "center",
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid var(--border-strong)",
+                    }}
+                  />
+                  <button
+                    className="btn"
+                    style={{ width: "auto", padding: "0 16px" }}
+                    disabled={busyId === e.id || resetPin.length < 4}
+                    onClick={() => submitReset(e.id, e.name)}
+                  >
+                    {busyId === e.id ? "Saving…" : "Save"}
+                  </button>
+                </div>
+                {resetError && <p className="error-text" style={{ margin: "8px 0 0" }}>{resetError}</p>}
+                <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "8px 0 0" }}>
+                  {e.name} can log in with this PIN right away — it replaces her old one immediately.
+                </p>
+              </div>
+            )}
+
+            {justSet?.id === e.id && (
+              <div className="card gold" style={{ marginTop: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 13.5 }}>
+                  ✓ PIN set to <strong style={{ fontSize: 17, letterSpacing: "0.1em" }}>{justSet.pin}</strong> for {justSet.name}.
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "var(--muted)" }}>
+                  Share this with her now — it won't be shown again.
+                </p>
+                <button className="link-button" style={{ padding: 0, marginTop: 4 }} onClick={() => setJustSet(null)}>
+                  Dismiss
                 </button>
               </div>
             )}
