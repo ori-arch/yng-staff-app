@@ -74,7 +74,7 @@ export async function GET() {
       type: ch.type,
       title,
       lastMessage: lastMsg
-        ? { body: lastMsg.body, createdAt: lastMsg.created_at, senderName: sender?.name ?? null }
+        ? { body: lastMsg.body, createdAt: lastMsg.created_at, senderName: lastMsg.sender_id === null ? "Alert" : sender?.name ?? null }
         : null,
     });
   }

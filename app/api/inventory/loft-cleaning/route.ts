@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { LOFT_CLEANING_STEPS } from "@/lib/inventory-steps";
+import { postBroadcastAlert } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -99,5 +100,18 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const flags: string[] = [];
+  if (lowOnCleanLinens) flags.push("low on clean linens");
+  if (fridgeItemsOverWeekOld) flags.push("items in the fridge over a week old");
+  if (fridgeItemsUnlabeled) flags.push("unlabeled fridge items");
+  if (flags.length > 0) {
+    try {
+      await postBroadcastAlert(supabase, `⚠️ Loft Cleaning (${session.name}) flagged: ${flags.join("; ")}.`);
+    } catch {
+      // Best-effort — don't fail the submission over an alert post.
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { verifyPin } from "@/lib/pin";
+import { postBroadcastAlert } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -135,5 +136,30 @@ export async function POST(req: NextRequest) {
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
+
+  // If the restocked item matches a tracked backbar item and the reported
+  // remaining quantity is at/below its par level, flag it for the team —
+  // this is what "someone should reorder this soon" looks like without a
+  // dedicated low-stock UI.
+  try {
+    const qty = typeof remainingQuantity === "string" ? parseFloat(remainingQuantity) : NaN;
+    if (!Number.isNaN(qty)) {
+      const { data: matchedItem } = await supabase
+        .from("backbar_items")
+        .select("name, par_level")
+        .eq("active", true)
+        .ilike("name", specificItem.trim())
+        .maybeSingle();
+      if (matchedItem && qty <= Number(matchedItem.par_level)) {
+        await postBroadcastAlert(
+          supabase,
+          `⚠️ Room Restocking (${session.name}): ${matchedItem.name} is down to ${qty}, at or below its par level of ${matchedItem.par_level}.`
+        );
+      }
+    }
+  } catch {
+    // Best-effort — don't fail the submission over an alert post.
+  }
+
   return NextResponse.json({ ok: true });
 }

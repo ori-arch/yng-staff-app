@@ -67,7 +67,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       body: m.body,
       createdAt: m.created_at,
       senderId: m.sender_id,
-      senderName: sender?.name ?? "Unknown",
+      senderName: m.sender_id === null ? "Alert" : sender?.name ?? "Unknown",
       isMe: m.sender_id === session.employeeId,
     };
   });

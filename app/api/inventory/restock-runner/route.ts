@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { RESTOCK_RUNNER_STEPS } from "@/lib/inventory-steps";
+import { postBroadcastAlert } from "@/lib/alerts";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -73,5 +74,18 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  const flagged = Array.isArray(lowInventoryItems) ? lowInventoryItems.filter((s) => typeof s === "string" && s.trim()) : [];
+  if (flagged.length > 0) {
+    try {
+      await postBroadcastAlert(
+        supabase,
+        `⚠️ Restock Runner (${session.name}) flagged low inventory: ${flagged.join(", ")}.`
+      );
+    } catch {
+      // Best-effort — don't fail the submission over an alert post.
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

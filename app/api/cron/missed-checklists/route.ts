@@ -1,0 +1,94 @@
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { postBroadcastAlert } from "@/lib/alerts";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+/**
+ * Daily cron (see vercel.json) — checks *yesterday's* checklist segments for
+ * every active front_desk/aesthetician employee and posts one digest alert
+ * to the "All Staff" broadcast channel listing anything that was never
+ * completed. Runs once a day early morning so a missed close/open shows up
+ * the same day it's still fixable to talk about.
+ *
+ * Protected by CRON_SECRET — Vercel automatically sends
+ * `Authorization: Bearer <CRON_SECRET>` when invoking a configured cron, so
+ * this rejects any request that doesn't match (including manual hits).
+ * Idempotent: skips posting if a report for the same date was already
+ * posted, in case the Hobby-plan cron fires more than once in a day.
+ */
+export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  if (secret) {
+    const auth = req.headers.get("authorization");
+    if (auth !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+    }
+  }
+
+  const supabase = supabaseAdmin();
+
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const date = yesterday.toISOString().slice(0, 10);
+
+  const reportMarker = `Missed Checklist Report — ${date}`;
+  const { data: existing } = await supabase
+    .from("messages")
+    .select("id")
+    .ilike("body", `${reportMarker}%`)
+    .limit(1)
+    .maybeSingle();
+  if (existing) {
+    return NextResponse.json({ ok: true, skipped: "already posted for this date" });
+  }
+
+  const [{ data: employees, error: empError }, { data: templates, error: tplError }] = await Promise.all([
+    supabase
+      .from("employees")
+      .select("id, name, role")
+      .eq("active", true)
+      .in("role", ["front_desk", "aesthetician"])
+      .order("name"),
+    supabase.from("checklist_templates").select("role, segment").eq("active", true),
+  ]);
+  if (empError) return NextResponse.json({ error: empError.message }, { status: 500 });
+  if (tplError) return NextResponse.json({ error: tplError.message }, { status: 500 });
+
+  const segmentsByRole: Record<string, string[]> = {};
+  for (const t of templates ?? []) {
+    if (!segmentsByRole[t.role]) segmentsByRole[t.role] = [];
+    if (!segmentsByRole[t.role].includes(t.segment)) segmentsByRole[t.role].push(t.segment);
+  }
+
+  const employeeIds = (employees ?? []).map((e) => e.id);
+  const { data: submissions, error: subError } = await supabase
+    .from("checklist_submissions")
+    .select("employee_id, segment, completed_at")
+    .eq("submission_date", date)
+    .in("employee_id", employeeIds.length ? employeeIds : ["00000000-0000-0000-0000-000000000000"]);
+  if (subError) return NextResponse.json({ error: subError.message }, { status: 500 });
+
+  const missedLines: string[] = [];
+  for (const emp of employees ?? []) {
+    const segments = segmentsByRole[emp.role] ?? [];
+    const missedSegments = segments.filter((segment) => {
+      const sub = (submissions ?? []).find((s) => s.employee_id === emp.id && s.segment === segment);
+      return !sub?.completed_at;
+    });
+    if (missedSegments.length > 0) {
+      missedLines.push(`${emp.name}: ${missedSegments.join(", ")}`);
+    }
+  }
+
+  if (missedLines.length === 0) {
+    return NextResponse.json({ ok: true, missed: 0 });
+  }
+
+  const body = `${reportMarker}\n${missedLines.map((l) => `• ${l}`).join("\n")}`;
+  await postBroadcastAlert(supabase, body);
+
+  return NextResponse.json({ ok: true, missed: missedLines.length });
+}
