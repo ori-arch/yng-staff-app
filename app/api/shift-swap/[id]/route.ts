@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const supabase = supabaseAdmin();
   const { data: swap, error: fetchError } = await supabase
     .from("shift_swap_requests")
-    .select("id, requesting_employee_id, target_employee_id, shift_description, status")
+    .select("id, requesting_employee_id, target_employee_id, shift_description, status, shift_date, start_time, end_time, room_id")
     .eq("id", params.id)
     .maybeSingle();
   if (fetchError) return NextResponse.json({ error: fetchError.message }, { status: 500 });
@@ -62,10 +62,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         .select("id, name")
         .in("id", [swap.requesting_employee_id, swap.target_employee_id]);
       const nameOf = (id: string) => names?.find((n) => n.id === id)?.name ?? "Someone";
+      const shiftLabel = swap.shift_date
+        ? `${swap.shift_date} ${(swap.start_time ?? "").slice(0, 5)}–${(swap.end_time ?? "").slice(0, 5)}`
+        : swap.shift_description ?? "a shift";
       await notifyEmployees(supabase, managerIds, {
         type: "approval_needed",
         title: "Shift swap needs approval",
-        body: `${nameOf(swap.requesting_employee_id)} ↔ ${nameOf(swap.target_employee_id)}: ${swap.shift_description}`,
+        body: `${nameOf(swap.requesting_employee_id)} ↔ ${nameOf(swap.target_employee_id)}: ${shiftLabel}`,
         link: "/shift-swap",
       });
     }
@@ -94,6 +97,41 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!updated || updated.length === 0) {
       return NextResponse.json({ error: "This request has already been decided." }, { status: 400 });
     }
+
+    // Actually move the shift on the schedule: the requester is taken off
+    // that date, the coworker is added in their place, same time/room.
+    // Older swap requests (before shift details were captured) have no
+    // shift_date and are left as history-only, same as before.
+    if (action === "approve" && swap.shift_date) {
+      const { error: scheduleError } = await supabase.from("shift_exceptions").insert([
+        {
+          employee_id: swap.requesting_employee_id,
+          date: swap.shift_date,
+          action: "skip",
+          created_by: session.employeeId,
+          note: "Shift swap approved",
+        },
+        {
+          employee_id: swap.target_employee_id,
+          date: swap.shift_date,
+          action: "add",
+          start_time: swap.start_time,
+          end_time: swap.end_time,
+          room_id: swap.room_id,
+          created_by: session.employeeId,
+          note: "Covering a shift swap",
+        },
+      ]);
+      if (scheduleError) {
+        // The swap itself is already approved; surface the schedule-sync
+        // failure separately so a manager can fix it by hand if needed.
+        return NextResponse.json({
+          ok: true,
+          warning: "Swap approved, but the schedule couldn't be updated automatically: " + scheduleError.message,
+        });
+      }
+    }
+
     return NextResponse.json({ ok: true });
   }
 
