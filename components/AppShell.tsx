@@ -122,7 +122,8 @@ export default function AppShell({ session, children }: { session: ShellSession 
   }, [open]);
 
   // Unauthenticated screens (who's-clocking-in, PIN entry, PIN setup) get a bare shell.
-  if (!session) return <>{children}</>;
+  const bare = pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/setup");
+  if (!session || bare) return <>{children}</>;
 
   const isHome = pathname === "/dashboard";
   const groups = navFor(session);
