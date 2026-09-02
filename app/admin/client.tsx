@@ -45,6 +45,7 @@ const TABS = [
   { key: "rooms", label: "Rooms" },
   { key: "checklists", label: "Checklists" },
   { key: "parLevels", label: "Par Levels" },
+  { key: "broadcastTemplates", label: "Broadcast Templates" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -76,6 +77,7 @@ export default function Admin({ isOwner, myEmployeeId }: { isOwner: boolean; myE
       {tab === "rooms" && <RoomsTab setError={setError} />}
       {tab === "checklists" && <ChecklistsTab setError={setError} />}
       {tab === "parLevels" && <ParLevelsTab setError={setError} />}
+      {tab === "broadcastTemplates" && <BroadcastTemplatesTab setError={setError} />}
     </div>
   );
 }
@@ -735,6 +737,163 @@ function ParLevelsTab({ setError }: { setError: (e: string | null) => void }) {
             </div>
           </div>
         ))}
+      </div>
+    </>
+  );
+}
+
+/* ---------------- Broadcast Templates ---------------- */
+
+type BroadcastTemplate = { id: string; title: string; body: string; active: boolean };
+
+function BroadcastTemplatesTab({ setError }: { setError: (e: string | null) => void }) {
+  const [templates, setTemplates] = useState<BroadcastTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newTitle, setNewTitle] = useState("");
+  const [newBody, setNewBody] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [edits, setEdits] = useState<Record<string, { title: string; body: string }>>({});
+
+  function load() {
+    fetch("/api/broadcast-templates?all=1")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else setTemplates(data.templates ?? []);
+      })
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function addTemplate() {
+    if (!newTitle.trim() || !newBody.trim()) return;
+    setAdding(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/broadcast-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle.trim(), body: newBody.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNewTitle("");
+        setNewBody("");
+        load();
+      } else setError(data.error || "Could not add template.");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  function edited(t: BroadcastTemplate) {
+    return edits[t.id] ?? { title: t.title, body: t.body };
+  }
+
+  async function saveTemplate(t: BroadcastTemplate) {
+    const e = edited(t);
+    setBusyId(t.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/broadcast-templates/${t.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: e.title, body: e.body }),
+      });
+      const data = await res.json();
+      if (res.ok) load();
+      else setError(data.error || "Could not save template.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function toggleActive(t: BroadcastTemplate) {
+    setBusyId(t.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/broadcast-templates/${t.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !t.active }),
+      });
+      const data = await res.json();
+      if (res.ok) load();
+      else setError(data.error || "Could not update template.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
+
+  return (
+    <>
+      <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>
+        These show up as tappable quick-fill options on the <strong>Send a Broadcast</strong> screen.
+      </p>
+
+      <div className="card">
+        <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0 }}>Add template</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <input
+            type="text"
+            placeholder="Title (e.g. Early Closure)"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            style={inputStyle()}
+          />
+          <textarea
+            placeholder="The actual announcement text"
+            value={newBody}
+            onChange={(e) => setNewBody(e.target.value)}
+            rows={3}
+            style={{ ...inputStyle(), resize: "vertical" }}
+          />
+          <button className="btn" disabled={!newTitle.trim() || !newBody.trim() || adding} onClick={addTemplate} style={{ width: "auto" }}>
+            {adding ? "Adding…" : "Add"}
+          </button>
+        </div>
+      </div>
+
+      <div className="section-label">Templates</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {templates.map((t) => {
+          const e = edited(t);
+          return (
+            <div key={t.id} className="card" style={{ opacity: t.active ? 1 : 0.55 }}>
+              <input
+                type="text"
+                value={e.title}
+                onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...e, title: ev.target.value } }))}
+                style={{ ...inputStyle(), width: "100%", fontWeight: 600, marginBottom: 6 }}
+              />
+              <textarea
+                value={e.body}
+                onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...e, body: ev.target.value } }))}
+                rows={2}
+                style={{ ...inputStyle(), width: "100%", resize: "vertical" }}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button className="btn" style={{ width: "auto", padding: "6px 12px" }} disabled={busyId === t.id} onClick={() => saveTemplate(t)}>
+                  Save
+                </button>
+                <button
+                  disabled={busyId === t.id}
+                  onClick={() => toggleActive(t)}
+                  style={{ fontSize: 12, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                >
+                  {t.active ? "Deactivate" : "Reactivate"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </>
   );

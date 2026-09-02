@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Message = {
   id: string;
@@ -16,9 +17,11 @@ function fmtTime(iso: string) {
 }
 
 export default function ThreadView({ channelId }: { channelId: string }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [channelType, setChannelType] = useState<string | null>(null);
   const [canPost, setCanPost] = useState(true);
+  const [isManager, setIsManager] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -36,6 +39,7 @@ export default function ThreadView({ channelId }: { channelId: string }) {
         setMessages(data.messages ?? []);
         setChannelType(data.channelType);
         setCanPost(data.canPost);
+        setIsManager(!!data.isManager);
       })
       .finally(() => setLoading(false));
   }
@@ -130,11 +134,18 @@ export default function ThreadView({ channelId }: { channelId: string }) {
             Send
           </button>
         </div>
-      ) : (
-        <p style={{ color: "var(--muted)", fontSize: 13, textAlign: "center" }}>
-          Only managers can post to All Staff.
-        </p>
-      )}
+      ) : channelType === "broadcast" ? (
+        <div style={{ textAlign: "center", padding: "8px 0" }}>
+          <p style={{ color: "var(--muted)", fontSize: 13, margin: "0 0 8px" }}>
+            This is a read-only history of announcements.
+          </p>
+          {isManager && (
+            <button className="btn gold" style={{ width: "auto", padding: "0 18px" }} onClick={() => router.push("/broadcast")}>
+              Send a Broadcast
+            </button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

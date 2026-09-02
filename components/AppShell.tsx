@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import NotificationBell from "./NotificationBell";
+import UpdateGate from "./UpdateGate";
 
 export type ShellSession = {
   name: string;
@@ -71,6 +72,7 @@ function navFor(session: ShellSession): NavGroup[] {
       label: "Manage",
       links: [
         { href: "/compliance", label: "Compliance" },
+        { href: "/broadcast", label: "Send a Broadcast" },
         { href: "/schedule", label: "Schedule" },
         { href: "/my-shifts", label: "My Shifts" },
         { href: "/photos", label: "Photos" },
@@ -128,7 +130,12 @@ export default function AppShell({ session, children }: { session: ShellSession 
 
   // Unauthenticated screens (who's-clocking-in, PIN entry, PIN setup) get a bare shell.
   const bare = pathname === "/" || pathname.startsWith("/login") || pathname.startsWith("/setup");
-  if (!session || bare) return <>{children}</>;
+  if (!session || bare) return (
+    <>
+      <UpdateGate />
+      {children}
+    </>
+  );
 
   const isHome = pathname === "/dashboard";
   const groups = navFor(session);
@@ -146,6 +153,7 @@ export default function AppShell({ session, children }: { session: ShellSession 
 
   return (
     <>
+      <UpdateGate />
       <header className="app-header">
         <div className="app-header-inner">
           <div className="header-left">
@@ -205,6 +213,12 @@ export default function AppShell({ session, children }: { session: ShellSession 
                 })}
               </div>
             ))}
+
+            <div className="drawer-group">
+              <a href="/settings" className={`drawer-link${pathname === "/settings" ? " active" : ""}`}>
+                Settings <span className="chev">›</span>
+              </a>
+            </div>
 
             <div className="drawer-foot">
               <button className="btn outline" onClick={logout}>

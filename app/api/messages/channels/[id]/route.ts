@@ -74,10 +74,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
 
   const isManager = session.role === "manager" || session.isAdmin;
-  const canPost = channel.type === "broadcast" ? isManager : true;
+  // Broadcast is now a read-only history here — composing announcements
+  // moved to the dedicated /broadcast screen (with templates). DMs still
+  // compose right in this view.
+  const canPost = channel.type === "dm";
 
   return NextResponse.json(
-    { channelType: channel.type, canPost, messages },
+    { channelType: channel.type, canPost, isManager, messages },
     { headers: NO_STORE }
   );
 }
@@ -136,7 +139,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       link: `/messages/${params.id}`,
     });
   } else {
-    const { data: recipients } = await supabase.from("employees").select("id").eq("active", true).neq("id", session.employeeId);
+    // Include the sender too — a manager sending an announcement should see
+    // it land in their own bell/push as confirmation it actually went out.
+    const { data: recipients } = await supabase.from("employees").select("id").eq("active", true);
     await notifyEmployees(supabase, (recipients ?? []).map((e) => e.id), {
       type: "broadcast",
       title: `Broadcast from ${session.name}`,

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { enablePushNotifications, hasPushSubscription, pushSupported } from "@/lib/push-client";
 
 type Notification = {
   id: string;
@@ -42,7 +43,19 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pushState, setPushState] = useState<"unknown" | "unsupported" | "off" | "on" | "enabling">("unknown");
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!pushSupported()) setPushState("unsupported");
+    else hasPushSubscription().then((has) => setPushState(has ? "on" : "off"));
+  }, []);
+
+  async function turnOnPush() {
+    setPushState("enabling");
+    const ok = await enablePushNotifications();
+    setPushState(ok ? "on" : "off");
+  }
 
   function poll() {
     fetch("/api/notifications")
@@ -133,6 +146,28 @@ export default function NotificationBell() {
           }}
         >
           <div style={{ fontSize: 13, fontWeight: 700, padding: "8px 8px 4px" }}>Notifications</div>
+          {pushState === "off" && (
+            <div
+              style={{
+                margin: "0 8px 6px",
+                padding: "8px 9px",
+                borderRadius: 8,
+                background: "var(--gold-soft)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <span style={{ fontSize: 11.5 }}>Get these on your phone too</span>
+              <button className="btn" style={{ width: "auto", padding: "5px 10px", fontSize: 11.5 }} onClick={turnOnPush}>
+                Turn on
+              </button>
+            </div>
+          )}
+          {pushState === "enabling" && (
+            <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 8px 6px" }}>Enabling notifications…</p>
+          )}
           {loading ? (
             <p style={{ fontSize: 13, color: "var(--muted)", padding: 10 }}>Loading…</p>
           ) : notifications.length === 0 ? (

@@ -52,3 +52,20 @@ export async function hasPushSubscription(): Promise<boolean> {
   const subscription = await registration.pushManager.getSubscription();
   return !!subscription;
 }
+
+/** Unsubscribes this device from push and removes it server-side. */
+export async function disablePushNotifications(): Promise<void> {
+  if (!pushSupported()) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return;
+  const subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return;
+
+  const endpoint = subscription.endpoint;
+  await subscription.unsubscribe();
+  await fetch("/api/push/subscribe", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endpoint }),
+  });
+}

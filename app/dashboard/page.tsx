@@ -21,7 +21,7 @@ const TILES: Record<string, Tile> = {
   photos: { href: "/photos", label: "Photos", sub: "Everything staff have captured" },
   schedule: { href: "/schedule", label: "Schedule", sub: "Build the team's shifts" },
   myShifts: { href: "/my-shifts", label: "My Shifts", sub: "Your upcoming schedule" },
-  broadcast: { href: "/messages", label: "Send a Broadcast", sub: "Message the whole team", gold: true },
+  broadcast: { href: "/broadcast", label: "Send a Broadcast", sub: "Message the whole team", gold: true },
 };
 
 function TileGrid({ tiles }: { tiles: Tile[] }) {
