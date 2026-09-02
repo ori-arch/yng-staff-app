@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import CameraCapture from "@/components/CameraCapture";
 
 type Item = {
   submissionItemId: string;
@@ -43,8 +44,7 @@ export default function ChecklistSegmentPage() {
   const [signError, setSignError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingPhotoItemId = useRef<string | null>(null);
+  const [cameraForItem, setCameraForItem] = useState<Item | null>(null);
 
   function load(again = false) {
     setLoading(true);
@@ -70,8 +70,7 @@ export default function ChecklistSegmentPage() {
 
   async function toggleItem(item: Item) {
     if (item.requiresPhoto && !item.completed && !item.photoUrl) {
-      pendingPhotoItemId.current = item.submissionItemId;
-      fileInputRef.current?.click();
+      setCameraForItem(item);
       return;
     }
     await saveItem(item.submissionItemId, !item.completed);
@@ -101,13 +100,6 @@ export default function ChecklistSegmentPage() {
     } finally {
       setBusyItemId(null);
     }
-  }
-
-  function onPhotoChosen(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    const itemId = pendingPhotoItemId.current;
-    e.target.value = "";
-    if (file && itemId) saveItem(itemId, true, file);
   }
 
   const doneCount = items.filter((i) => i.completed).length;
@@ -189,15 +181,6 @@ export default function ChecklistSegmentPage() {
         </span>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: "none" }}
-        onChange={onPhotoChosen}
-      />
-
       {error && <p className="error-text">{error}</p>}
 
       <div className="stack" style={{ gap: 8 }}>
@@ -227,6 +210,18 @@ export default function ChecklistSegmentPage() {
           </button>
         </div>
       </div>
+
+      {cameraForItem && (
+        <CameraCapture
+          title={cameraForItem.itemText}
+          onCancel={() => setCameraForItem(null)}
+          onCapture={(file) => {
+            const itemId = cameraForItem.submissionItemId;
+            setCameraForItem(null);
+            saveItem(itemId, true, file);
+          }}
+        />
+      )}
 
       {signing && (
         <div className="sheet-backdrop" onClick={() => { setSigning(false); setPin(""); }}>

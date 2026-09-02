@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import PhotoCaptureField from "@/components/PhotoCaptureField";
 
 type Room = { id: string; name: string };
 
@@ -19,50 +20,6 @@ type Log = {
 
 function fmtDateTime(iso: string) {
   return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-}
-
-function PhotoField({
-  label,
-  file,
-  preview,
-  onChoose,
-}: {
-  label: string;
-  file: File | null;
-  preview: string | null;
-  onChoose: (f: File) => void;
-}) {
-  const ref = useRef<HTMLInputElement | null>(null);
-  return (
-    <div>
-      <label style={{ fontSize: 13, fontWeight: 600 }}>{label}</label>
-      <input
-        ref={ref}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: "none" }}
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          e.target.value = "";
-          if (f) onChoose(f);
-        }}
-      />
-      {preview ? (
-        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
-          <img src={preview} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8 }} />
-          <button onClick={() => ref.current?.click()} style={{ fontSize: 13 }}>Retake</button>
-        </div>
-      ) : (
-        <button
-          onClick={() => ref.current?.click()}
-          style={{ width: "100%", marginTop: 6, padding: 13, borderRadius: 12, border: "1px dashed var(--gold)", background: "var(--gold-soft)", color: "var(--gold-dark)", fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}
-        >
-          Take photo
-        </button>
-      )}
-    </div>
-  );
 }
 
 export default function RoomRestockingPage() {
@@ -264,8 +221,16 @@ export default function RoomRestockingPage() {
             </div>
           </div>
 
-          <PhotoField label="Photo of the empty bottle (before disposal)" file={emptyBottlePhoto} preview={emptyBottlePreview} onChoose={(f) => { setEmptyBottlePhoto(f); setEmptyBottlePreview(URL.createObjectURL(f)); }} />
-          <PhotoField label="Photo of the replacement item" file={newItemPhoto} preview={newItemPreview} onChoose={(f) => { setNewItemPhoto(f); setNewItemPreview(URL.createObjectURL(f)); }} />
+          <PhotoCaptureField
+            label="Photo of the empty bottle (before disposal)"
+            preview={emptyBottlePreview}
+            onCapture={(f) => { setEmptyBottlePhoto(f); setEmptyBottlePreview(URL.createObjectURL(f)); }}
+          />
+          <PhotoCaptureField
+            label="Photo of the replacement item"
+            preview={newItemPreview}
+            onCapture={(f) => { setNewItemPhoto(f); setNewItemPreview(URL.createObjectURL(f)); }}
+          />
 
           {error && <p className="error-text">{error}</p>}
           {justSubmitted && <p style={{ color: "var(--success)", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}

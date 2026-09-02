@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import PhotoCaptureField from "@/components/PhotoCaptureField";
 
 type Log = {
   id: string;
@@ -32,7 +33,6 @@ export default function EquipmentLogPage() {
   const [remarks, setRemarks] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -51,15 +51,6 @@ export default function EquipmentLogPage() {
   useEffect(() => {
     loadLogs();
   }, []);
-
-  function onPhotoChosen(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (file) {
-      setPhoto(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  }
 
   function resetForm() {
     setEquipmentType(DEVICE_OPTIONS[0]);
@@ -164,30 +155,12 @@ export default function EquipmentLogPage() {
           onChange={setCleanedProperly}
         />
 
-        <div>
-          <label style={{ fontSize: 13, fontWeight: 600 }}>Photo of cleaned handpiece (required)</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: "none" }}
-            onChange={onPhotoChosen}
-          />
-          {photoPreview ? (
-            <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
-              <img src={photoPreview} alt="Handpiece" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8 }} />
-              <button onClick={() => fileInputRef.current?.click()} style={{ fontSize: 13 }}>Retake</button>
-            </div>
-          ) : (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              style={{ width: "100%", marginTop: 6, padding: 13, borderRadius: 12, border: "1px dashed var(--gold)", background: "var(--gold-soft)", color: "var(--gold-dark)", fontWeight: 600, fontSize: 14.5, cursor: "pointer" }}
-            >
-              Take photo
-            </button>
-          )}
-        </div>
+        <PhotoCaptureField
+          label="Photo of cleaned handpiece (required)"
+          preview={photoPreview}
+          cameraTitle="Cleaned Handpiece"
+          onCapture={(f) => { setPhoto(f); setPhotoPreview(URL.createObjectURL(f)); }}
+        />
 
         <div>
           <label style={{ fontSize: 13, fontWeight: 600 }}>Remarks (optional)</label>

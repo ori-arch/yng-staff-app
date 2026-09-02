@@ -564,3 +564,90 @@ select {
 .inline-actions > * { flex: 1; }
 
 input[type="checkbox"] { accent-color: var(--ink); width: 20px; height: 20px; }
+
+/* ---------- camera capture ---------- */
+
+.camera-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
+  color: #fff;
+}
+
+.camera-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.camera-title {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.camera-stage {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-loading {
+  position: absolute;
+  color: #d8d2c8;
+  font-size: 14px;
+}
+
+.camera-error {
+  max-width: 320px;
+  text-align: center;
+  padding: 0 24px;
+  color: #f0ece5;
+}
+.camera-error p { margin: 0 0 16px; font-size: 14.5px; line-height: 1.5; }
+
+.camera-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 calc(28px + env(safe-area-inset-bottom));
+}
+
+.camera-shutter {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid var(--gold);
+  cursor: pointer;
+  padding: 0;
+}
+.camera-shutter:active { background: var(--gold-soft); }

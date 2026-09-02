@@ -69,6 +69,7 @@ function navFor(session: ShellSession): NavGroup[] {
       label: "Manage",
       links: [
         { href: "/compliance", label: "Compliance" },
+        { href: "/photos", label: "Photos" },
         { href: "/equipment-log", label: "Equipment Log" },
         { href: "/inventory/room-restocking", label: "Room Restocking" },
         { href: "/inventory/restock-runner", label: "Restock Runner" },

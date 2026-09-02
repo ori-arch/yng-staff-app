@@ -18,6 +18,7 @@ const TILES: Record<string, Tile> = {
   messages: { href: "/messages", label: "Messages", sub: "Team & alerts" },
   admin: { href: "/admin", label: "Admin Panel", sub: "Team, rooms, checklists" },
   compliance: { href: "/compliance", label: "Compliance", sub: "Who did what today" },
+  photos: { href: "/photos", label: "Photos", sub: "Everything staff have captured" },
   broadcast: { href: "/messages", label: "Send a Broadcast", sub: "Message the whole team", gold: true },
 };
 
@@ -175,7 +176,7 @@ async function ManagerDashboard() {
       <TileGrid tiles={[TILES.broadcast, TILES.messages]} />
 
       <div className="section-label">Manage</div>
-      <TileGrid tiles={[TILES.admin, TILES.protocols]} />
+      <TileGrid tiles={[TILES.admin, TILES.photos, TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Equipment and inventory logs, time off and more are in the menu ☰
