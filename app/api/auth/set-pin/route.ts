@@ -47,13 +47,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
 
-  const { error: updateError } = await supabase
-    .from("employees")
-    .update({ pin_hash: hashPin(String(newPin)) })
-    .eq("id", employeeId);
+  let query = supabase.from("employees").update({ pin_hash: hashPin(String(newPin)) }).eq("id", employeeId);
+  if (!employee.pin_hash) {
+    // Bootstrap case: guard against two bootstrap requests racing for the
+    // same brand-new employee — only succeed if pin_hash is still null.
+    query = query.is("pin_hash", null);
+  }
+  const { data: updated, error: updateError } = await query.select("id");
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+  if (!employee.pin_hash && (!updated || updated.length === 0)) {
+    return NextResponse.json({ error: "A PIN was already set for this account. Please log in instead." }, { status: 409 });
   }
 
   return NextResponse.json({ ok: true });

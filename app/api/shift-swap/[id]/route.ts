@@ -41,14 +41,19 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (session.employeeId !== swap.target_employee_id) {
       return NextResponse.json({ error: "Only the requested coworker can respond to this." }, { status: 403 });
     }
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("shift_swap_requests")
       .update({
         status: action === "accept" ? "pending_owner" : "denied",
         coworker_responded_at: new Date().toISOString(),
       })
-      .eq("id", params.id);
+      .eq("id", params.id)
+      .eq("status", "pending_coworker")
+      .select("id");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ error: "This request has already been responded to." }, { status: 400 });
+    }
 
     if (action === "accept") {
       const managerIds = await getManagerRecipientIds(supabase);
@@ -75,15 +80,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (!isManager) {
       return NextResponse.json({ error: "Managers only." }, { status: 403 });
     }
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("shift_swap_requests")
       .update({
         status: action === "approve" ? "approved" : "denied",
         owner_decided_at: new Date().toISOString(),
         decided_by: session.employeeId,
       })
-      .eq("id", params.id);
+      .eq("id", params.id)
+      .eq("status", "pending_owner")
+      .select("id");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ error: "This request has already been decided." }, { status: 400 });
+    }
     return NextResponse.json({ ok: true });
   }
 

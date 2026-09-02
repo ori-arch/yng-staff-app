@@ -99,16 +99,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
   }
 
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await supabase
     .from("warning_notices")
     .update({
       status: "acknowledged",
       employee_comments: typeof comments === "string" ? comments.trim() : null,
       acknowledged_at: new Date().toISOString(),
     })
-    .eq("id", params.id);
+    .eq("id", params.id)
+    .eq("status", "issued")
+    .select("id");
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
+  }
+  if (!updated || updated.length === 0) {
+    return NextResponse.json({ error: "This warning has already been acknowledged." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

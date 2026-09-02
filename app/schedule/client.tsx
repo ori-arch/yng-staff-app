@@ -329,11 +329,16 @@ function DaySheet({
   async function removeException(id: string) {
     setBusy(true);
     try {
-      await fetch(`/api/admin/shift-exceptions/${id}`, {
+      const res = await fetch(`/api/admin/shift-exceptions/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: false }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        onError(data.error || "Could not remove this exception.");
+        return;
+      }
       onChanged();
     } finally {
       setBusy(false);
@@ -483,11 +488,16 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
   async function toggleActive(p: Pattern) {
     setBusy(true);
     try {
-      await fetch(`/api/admin/shift-patterns/${p.id}`, {
+      const res = await fetch(`/api/admin/shift-patterns/${p.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: !p.active }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        onError(data.error || "Could not update this pattern.");
+        return;
+      }
       load();
     } finally {
       setBusy(false);

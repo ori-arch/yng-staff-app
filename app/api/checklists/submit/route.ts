@@ -71,13 +71,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { error: finalizeError } = await supabase
+  const { data: finalized, error: finalizeError } = await supabase
     .from("checklist_submissions")
     .update({ completed_at: new Date().toISOString(), pin_signature_confirmed: true })
-    .eq("id", submissionId);
+    .eq("id", submissionId)
+    .is("completed_at", null)
+    .select("id");
 
   if (finalizeError) {
     return NextResponse.json({ error: finalizeError.message }, { status: 500 });
+  }
+  if (!finalized || finalized.length === 0) {
+    return NextResponse.json({ error: "Already submitted." }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });
