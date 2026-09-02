@@ -8,7 +8,8 @@ import { getSession } from "@/lib/session";
  *  1. Bootstrap: the employee has no PIN yet (pin_hash is null) — anyone can set it once.
  *     This is how Ori sets her own PIN on first run, and how newly-added employees get one.
  *  2. Self-service change: logged in as that employee, must supply the correct currentPin.
- *  3. Admin reset: logged in as an admin, can set any employee's PIN without currentPin.
+ *  3. Admin/manager reset: logged in as an admin or manager, can set any employee's
+ *     PIN without currentPin (this is the Admin Panel's "Reset PIN" action).
  */
 export async function POST(req: NextRequest) {
   const { employeeId, newPin, currentPin } = await req.json();
@@ -40,8 +41,8 @@ export async function POST(req: NextRequest) {
     if (!verifyPin(currentPin, employee.pin_hash)) {
       return NextResponse.json({ error: "Current PIN is incorrect." }, { status: 401 });
     }
-  } else if (session?.isAdmin) {
-    // Case 3: admin reset.
+  } else if (session?.isAdmin || session?.role === "manager") {
+    // Case 3: admin/manager reset (Admin Panel "Reset PIN" action).
   } else {
     return NextResponse.json({ error: "Not authorized." }, { status: 403 });
   }
