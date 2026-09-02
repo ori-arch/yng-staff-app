@@ -10,6 +10,8 @@ type ShiftInstance = {
   endTime: string;
   source: "pattern" | "exception";
   note: string | null;
+  roomId: string | null;
+  roomName: string | null;
 };
 
 type TimeOffBlock = { employeeId: string; employeeName: string; startDate: string; endDate: string; reason: string | null };
@@ -130,6 +132,7 @@ function ListView({ onError }: { onError: (e: string | null) => void }) {
             {entry.shifts.map((s, i) => (
               <div key={i} style={{ fontSize: 14 }}>
                 {s.startTime}–{s.endTime}
+                {s.roomName ? ` · ${s.roomName}` : ""}
                 {s.source === "exception" && s.note ? ` — ${s.note}` : ""}
               </div>
             ))}
@@ -186,11 +189,19 @@ function CalendarView({ onError }: { onError: (e: string | null) => void }) {
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-        <button className="btn outline" style={{ padding: "6px 12px" }} onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() - 1, 1)))}>
+        <button
+          className="btn outline"
+          style={{ padding: "4px 10px", fontSize: 14, lineHeight: 1, width: "auto", minWidth: 0 }}
+          onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() - 1, 1)))}
+        >
           ‹
         </button>
         <strong>{monthLabel(monthAnchor)}</strong>
-        <button className="btn outline" style={{ padding: "6px 12px" }} onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)))}>
+        <button
+          className="btn outline"
+          style={{ padding: "4px 10px", fontSize: 14, lineHeight: 1, width: "auto", minWidth: 0 }}
+          onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)))}
+        >
           ›
         </button>
       </div>
@@ -245,6 +256,7 @@ function CalendarView({ onError }: { onError: (e: string | null) => void }) {
               {(shiftsByDate.get(selected) ?? []).map((s, i) => (
                 <div key={i} style={{ fontSize: 14 }}>
                   {s.startTime}–{s.endTime}
+                  {s.roomName ? ` · ${s.roomName}` : ""}
                   {s.note ? ` — ${s.note}` : ""}
                 </div>
               ))}

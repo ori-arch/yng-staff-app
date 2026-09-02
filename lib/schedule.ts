@@ -8,6 +8,8 @@ export type ShiftInstance = {
   endTime: string;
   source: "pattern" | "exception";
   note: string | null;
+  roomId: string | null;
+  roomName: string | null;
 };
 
 export type TimeOffBlock = {
@@ -61,7 +63,7 @@ export async function getSchedule(
 
   let patternsQuery = supabase
     .from("shift_patterns")
-    .select("id, employee_id, weekday, start_time, end_time, note, employees!shift_patterns_employee_id_fkey(name)")
+    .select("id, employee_id, weekday, start_time, end_time, note, room_id, employees!shift_patterns_employee_id_fkey(name), rooms(name)")
     .eq("active", true);
   if (employeeId) patternsQuery = patternsQuery.eq("employee_id", employeeId);
   const { data: patterns, error: patternsError } = await patternsQuery;
@@ -69,7 +71,7 @@ export async function getSchedule(
 
   let exceptionsQuery = supabase
     .from("shift_exceptions")
-    .select("id, employee_id, date, action, start_time, end_time, note, employees!shift_exceptions_employee_id_fkey(name)")
+    .select("id, employee_id, date, action, start_time, end_time, note, room_id, employees!shift_exceptions_employee_id_fkey(name), rooms(name)")
     .eq("active", true)
     .gte("date", startDate)
     .lte("date", endDate);
@@ -91,6 +93,10 @@ export async function getSchedule(
     const e = Array.isArray(row.employees) ? row.employees[0] : row.employees;
     return (e as { name?: string } | null)?.name ?? "Unknown";
   };
+  const roomNameOf = (row: { rooms: unknown }): string | null => {
+    const r = Array.isArray(row.rooms) ? row.rooms[0] : row.rooms;
+    return (r as { name?: string } | null)?.name ?? null;
+  };
 
   const dates = eachDate(startDate, endDate);
   const byEmployeeDate = new Map<string, ShiftInstance[]>();
@@ -110,6 +116,8 @@ export async function getSchedule(
         endTime: hhmm(p.end_time),
         source: "pattern",
         note: p.note ?? null,
+        roomId: p.room_id ?? null,
+        roomName: roomNameOf(p),
       });
       byEmployeeDate.set(k, arr);
     }
@@ -132,6 +140,8 @@ export async function getSchedule(
       endTime: hhmm(ex.end_time),
       source: "exception",
       note: ex.note ?? null,
+      roomId: ex.room_id ?? null,
+      roomName: roomNameOf(ex),
     };
     if (ex.action === "modify") {
       byEmployeeDate.set(k, [entry]);

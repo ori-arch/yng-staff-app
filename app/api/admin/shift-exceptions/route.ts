@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("shift_exceptions")
-    .select("id, employee_id, date, action, start_time, end_time, note, active, employees!shift_exceptions_employee_id_fkey(name)")
+    .select("id, employee_id, date, action, start_time, end_time, note, active, room_id, employees!shift_exceptions_employee_id_fkey(name), rooms(name)")
     .eq("active", true)
     .gte("date", start)
     .lte("date", end)
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
 
   const exceptions = (data ?? []).map((ex) => {
     const emp = Array.isArray(ex.employees) ? ex.employees[0] : ex.employees;
+    const room = Array.isArray(ex.rooms) ? ex.rooms[0] : ex.rooms;
     return {
       id: ex.id,
       employeeId: ex.employee_id,
@@ -43,6 +44,8 @@ export async function GET(req: NextRequest) {
       startTime: ex.start_time,
       endTime: ex.end_time,
       note: ex.note,
+      roomId: ex.room_id,
+      roomName: (room as { name?: string } | null)?.name ?? null,
     };
   });
 
@@ -56,7 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Admins only." }, { status: 403 });
   }
 
-  const { employeeId, date, action, startTime, endTime, note } = await req.json();
+  const { employeeId, date, action, startTime, endTime, note, roomId } = await req.json();
   if (typeof employeeId !== "string" || !employeeId) {
     return NextResponse.json({ error: "Missing employeeId." }, { status: 400 });
   }
@@ -80,6 +83,7 @@ export async function POST(req: NextRequest) {
       start_time: action === "skip" ? null : startTime,
       end_time: action === "skip" ? null : endTime,
       note: typeof note === "string" ? note.trim() || null : null,
+      room_id: action === "skip" ? null : typeof roomId === "string" && roomId ? roomId : null,
       created_by: session.employeeId,
     })
     .select("id")

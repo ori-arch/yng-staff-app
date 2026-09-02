@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 type Employee = { id: string; name: string; role: string };
 
+type Room = { id: string; name: string };
+
 type ShiftInstance = {
   employeeId: string;
   employeeName: string;
@@ -12,6 +14,8 @@ type ShiftInstance = {
   endTime: string;
   source: "pattern" | "exception";
   note: string | null;
+  roomId: string | null;
+  roomName: string | null;
 };
 
 type TimeOffBlock = {
@@ -31,6 +35,8 @@ type Pattern = {
   endTime: string;
   note: string | null;
   active: boolean;
+  roomId: string | null;
+  roomName: string | null;
 };
 
 type Exception = {
@@ -42,6 +48,8 @@ type Exception = {
   startTime: string | null;
   endTime: string | null;
   note: string | null;
+  roomId: string | null;
+  roomName: string | null;
 };
 
 // Index-aligned with JS Date.getUTCDay() (0 = Sunday .. 6 = Saturday) — this
@@ -95,6 +103,7 @@ function gridRange(monthAnchor: Date): { start: Date; end: Date } {
 export default function Schedule() {
   const [tab, setTab] = useState<TabKey>("calendar");
   const [roster, setRoster] = useState<Employee[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,6 +111,11 @@ export default function Schedule() {
       .then((r) => r.json())
       .then((d) => {
         if (!d.error) setRoster(d.employees ?? []);
+      });
+    fetch("/api/rooms")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.error) setRooms(d.rooms ?? []);
       });
   }, []);
 
@@ -121,15 +135,15 @@ export default function Schedule() {
       {error && <p className="error-text">{error}</p>}
 
       {tab === "calendar" ? (
-        <CalendarTab roster={roster} onError={setError} />
+        <CalendarTab roster={roster} rooms={rooms} onError={setError} />
       ) : (
-        <PatternsTab roster={roster} onError={setError} />
+        <PatternsTab roster={roster} rooms={rooms} onError={setError} />
       )}
     </div>
   );
 }
 
-function CalendarTab({ roster, onError }: { roster: Employee[]; onError: (e: string | null) => void }) {
+function CalendarTab({ roster, rooms, onError }: { roster: Employee[]; rooms: Room[]; onError: (e: string | null) => void }) {
   const [monthAnchor, setMonthAnchor] = useState(() => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)));
   const [shifts, setShifts] = useState<ShiftInstance[]>([]);
   const [timeOff, setTimeOff] = useState<TimeOffBlock[]>([]);
@@ -183,11 +197,19 @@ function CalendarTab({ roster, onError }: { roster: Employee[]; onError: (e: str
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14 }}>
-        <button className="btn outline" style={{ padding: "6px 12px" }} onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() - 1, 1)))}>
+        <button
+          className="btn outline"
+          style={{ padding: "4px 10px", fontSize: 14, lineHeight: 1, width: "auto", minWidth: 0 }}
+          onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() - 1, 1)))}
+        >
           ‹
         </button>
         <strong style={{ fontFamily: "var(--font-serif, serif)" }}>{monthLabel(monthAnchor)}</strong>
-        <button className="btn outline" style={{ padding: "6px 12px" }} onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)))}>
+        <button
+          className="btn outline"
+          style={{ padding: "4px 10px", fontSize: 14, lineHeight: 1, width: "auto", minWidth: 0 }}
+          onClick={() => setMonthAnchor((m) => new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)))}
+        >
           ›
         </button>
       </div>
@@ -259,6 +281,7 @@ function CalendarTab({ roster, onError }: { roster: Employee[]; onError: (e: str
         <DaySheet
           date={selectedDate}
           roster={roster}
+          rooms={rooms}
           shifts={shiftsByDate.get(selectedDate) ?? []}
           timeOff={offOnDate(selectedDate)}
           exceptions={exceptions.filter((e) => e.date === selectedDate)}
@@ -274,6 +297,7 @@ function CalendarTab({ roster, onError }: { roster: Employee[]; onError: (e: str
 function DaySheet({
   date,
   roster,
+  rooms,
   shifts,
   timeOff,
   exceptions,
@@ -283,6 +307,7 @@ function DaySheet({
 }: {
   date: string;
   roster: Employee[];
+  rooms: Room[];
   shifts: ShiftInstance[];
   timeOff: TimeOffBlock[];
   exceptions: Exception[];
@@ -295,6 +320,7 @@ function DaySheet({
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [note, setNote] = useState("");
+  const [roomId, setRoomId] = useState("");
   const [busy, setBusy] = useState(false);
 
   const dateLabel = new Date(date + "T00:00:00Z").toLocaleDateString("en-US", {
@@ -312,7 +338,7 @@ function DaySheet({
       const res = await fetch("/api/admin/shift-exceptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, date, action, startTime, endTime, note }),
+        body: JSON.stringify({ employeeId, date, action, startTime, endTime, note, roomId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -320,6 +346,7 @@ function DaySheet({
         return;
       }
       setNote("");
+      setRoomId("");
       onChanged();
     } finally {
       setBusy(false);
@@ -357,7 +384,10 @@ function DaySheet({
           )}
           {shifts.map((s, i) => (
             <div key={i} className="card" style={{ padding: 8, display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 13.5 }}>{s.employeeName}</span>
+              <span style={{ fontSize: 13.5 }}>
+                {s.employeeName}
+                {s.roomName ? <span style={{ color: "var(--muted)" }}> · {s.roomName}</span> : null}
+              </span>
               <span style={{ fontSize: 13, color: "var(--muted)" }}>
                 {s.startTime}–{s.endTime}
                 {s.source === "exception" ? " (adjusted)" : ""}
@@ -380,6 +410,7 @@ function DaySheet({
                 <span style={{ fontSize: 12.5 }}>
                   {ex.employeeName} — {ex.action}
                   {ex.action !== "skip" ? ` ${ex.startTime}–${ex.endTime}` : ""}
+                  {ex.roomName ? ` · ${ex.roomName}` : ""}
                   {ex.note ? ` (${ex.note})` : ""}
                 </span>
                 <button onClick={() => removeException(ex.id)} disabled={busy} style={{ fontSize: 12, color: "var(--danger)" }}>
@@ -403,10 +434,18 @@ function DaySheet({
             <option value="skip">Skip today's scheduled shift</option>
           </select>
           {action !== "skip" && (
-            <div style={{ display: "flex", gap: 8 }}>
-              <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle({ flex: 1 })} />
-              <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle({ flex: 1 })} />
-            </div>
+            <>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle({ flex: 1 })} />
+                <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle({ flex: 1 })} />
+              </div>
+              <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={inputStyle()}>
+                <option value="">Room (optional)</option>
+                {rooms.map((r) => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </>
           )}
           <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle()} />
           <button className="btn" onClick={submit} disabled={busy || !employeeId}>
@@ -421,13 +460,14 @@ function DaySheet({
   );
 }
 
-function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: string | null) => void }) {
+function PatternsTab({ roster, rooms, onError }: { roster: Employee[]; rooms: Room[]; onError: (e: string | null) => void }) {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [employeeId, setEmployeeId] = useState("");
   const [weekdays, setWeekdays] = useState<Set<number>>(new Set());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [note, setNote] = useState("");
+  const [roomId, setRoomId] = useState("");
   const [busy, setBusy] = useState(false);
 
   function toggleWeekday(value: number) {
@@ -468,7 +508,7 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
           fetch("/api/admin/shift-patterns", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ employeeId, weekday, startTime, endTime, note }),
+            body: JSON.stringify({ employeeId, weekday, startTime, endTime, note, roomId }),
           }).then(async (res) => ({ ok: res.ok, data: await res.json() }))
         )
       );
@@ -478,6 +518,7 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
         return;
       }
       setNote("");
+      setRoomId("");
       setWeekdays(new Set());
       load();
     } finally {
@@ -524,6 +565,7 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
             <div key={p.id} className="card" style={{ padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center", opacity: p.active ? 1 : 0.5 }}>
               <span style={{ fontSize: 13.5 }}>
                 {WEEKDAY_LABELS[p.weekday]} · {p.startTime.slice(0, 5)}–{p.endTime.slice(0, 5)}
+                {p.roomName ? ` · ${p.roomName}` : ""}
                 {p.note ? ` — ${p.note}` : ""}
               </span>
               <button onClick={() => toggleActive(p)} disabled={busy} style={{ fontSize: 12.5, color: p.active ? "var(--danger)" : "var(--success)" }}>
@@ -570,6 +612,12 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
           <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle({ flex: 1 })} />
           <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle({ flex: 1 })} />
         </div>
+        <select value={roomId} onChange={(e) => setRoomId(e.target.value)} style={inputStyle()}>
+          <option value="">Room (optional)</option>
+          {rooms.map((r) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
+          ))}
+        </select>
         <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle()} />
         <button className="btn" onClick={addPattern} disabled={busy || !employeeId || weekdays.size === 0}>
           {busy ? "Saving…" : weekdays.size > 1 ? `Add recurring shift (${weekdays.size} days)` : "Add recurring shift"}

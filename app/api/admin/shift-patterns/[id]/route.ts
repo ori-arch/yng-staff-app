@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Admins only." }, { status: 403 });
   }
 
-  const { weekday, startTime, endTime, note, active } = await req.json();
+  const { weekday, startTime, endTime, note, active, roomId } = await req.json();
   const updates: Record<string, unknown> = {};
   if (weekday !== undefined) {
     const wd = Number(weekday);
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (endTime !== undefined) updates.end_time = endTime;
   if (note !== undefined) updates.note = typeof note === "string" ? note.trim() || null : null;
   if (active !== undefined) updates.active = !!active;
+  if (roomId !== undefined) updates.room_id = typeof roomId === "string" && roomId ? roomId : null;
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
   }
