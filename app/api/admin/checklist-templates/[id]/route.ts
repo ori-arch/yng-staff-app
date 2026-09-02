@@ -12,7 +12,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Admins only." }, { status: 403 });
   }
 
-  const { itemText, requiresPhoto, firstShiftOnly, lastShiftOnly, active } = await req.json();
+  const { itemText, requiresPhoto, firstShiftOnly, lastShiftOnly, active, itemOrder } = await req.json();
   const updates: Record<string, unknown> = {};
   if (itemText !== undefined) {
     if (!itemText.trim()) return NextResponse.json({ error: "Item text can't be empty." }, { status: 400 });
@@ -22,6 +22,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (firstShiftOnly !== undefined) updates.first_shift_only = !!firstShiftOnly;
   if (lastShiftOnly !== undefined) updates.last_shift_only = !!lastShiftOnly;
   if (active !== undefined) updates.active = !!active;
+  if (itemOrder !== undefined) {
+    const ord = Number(itemOrder);
+    if (!Number.isFinite(ord)) return NextResponse.json({ error: "Invalid itemOrder." }, { status: 400 });
+    updates.item_order = ord;
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Nothing to update." }, { status: 400 });

@@ -51,7 +51,7 @@ const TABS = [
 type TabKey = (typeof TABS)[number]["key"];
 
 function inputStyle(extra?: object) {
-  return { padding: 8, borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13, ...extra };
+  return { padding: "11px 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 14.5, ...extra };
 }
 
 export default function Admin({ isOwner, myEmployeeId }: { isOwner: boolean; myEmployeeId: string }) {
@@ -334,6 +334,8 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
   const [newName, setNewName] = useState("");
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   function load() {
     fetch("/api/admin/rooms")
@@ -387,6 +389,31 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
     }
   }
 
+  function startEdit(r: Room) {
+    setEditingId(r.id);
+    setEditName(r.name);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editName.trim()) return;
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/rooms/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEditingId(null);
+        load();
+      } else setError(data.error || "Could not rename room.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
 
   return (
@@ -410,18 +437,57 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
       <div className="section-label">Rooms</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {rooms.map((r) => (
-          <div key={r.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 14 }}>
-              {r.name}
-              {!r.active && <span style={{ fontSize: 11, color: "var(--danger)" }}> · Inactive</span>}
-            </span>
-            <button
-              disabled={busyId === r.id}
-              onClick={() => toggleActive(r.id, r.active)}
-              style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
-            >
-              {r.active ? "Deactivate" : "Reactivate"}
-            </button>
+          <div key={r.id} className="card" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+            {editingId === r.id ? (
+              <>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  style={{ ...inputStyle(), flex: 1 }}
+                  autoFocus
+                />
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    disabled={busyId === r.id || !editName.trim()}
+                    onClick={() => saveEdit(r.id)}
+                    className="btn"
+                    style={{ padding: "6px 10px", width: "auto" }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: 14 }}>
+                  {r.name}
+                  {!r.active && <span style={{ fontSize: 11, color: "var(--danger)" }}> · Inactive</span>}
+                </span>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    disabled={busyId === r.id}
+                    onClick={() => startEdit(r)}
+                    style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    disabled={busyId === r.id}
+                    onClick={() => toggleActive(r.id, r.active)}
+                    style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                  >
+                    {r.active ? "Deactivate" : "Reactivate"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -445,6 +511,18 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
   const [newText, setNewText] = useState<Record<string, string>>({});
   const [newPhoto, setNewPhoto] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+
+  function toggleCollapsed(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   function load() {
     fetch("/api/admin/checklist-templates")
@@ -473,6 +551,60 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
       const data = await res.json();
       if (res.ok) load();
       else setError(data.error || "Could not update item.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function startEdit(t: Template) {
+    setEditingId(t.id);
+    setEditText(t.item_text);
+  }
+
+  async function saveEdit(id: string) {
+    if (!editText.trim()) return;
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/checklist-templates/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemText: editText.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEditingId(null);
+        load();
+      } else setError(data.error || "Could not save changes.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function move(items: Template[], index: number, direction: -1 | 1) {
+    const other = items[index + direction];
+    const current = items[index];
+    if (!other || !current) return;
+    setBusyId(current.id);
+    setError(null);
+    try {
+      const [res1, res2] = await Promise.all([
+        fetch(`/api/admin/checklist-templates/${current.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemOrder: other.item_order }),
+        }),
+        fetch(`/api/admin/checklist-templates/${other.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemOrder: current.item_order }),
+        }),
+      ]);
+      if (!res1.ok || !res2.ok) {
+        setError("Could not reorder items.");
+        return;
+      }
+      load();
     } finally {
       setBusyId(null);
     }
@@ -508,77 +640,152 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
       {GROUPS.map((g) => {
         const key = `${g.role}:${g.segment}`;
         const items = templates.filter((t) => t.role === g.role && t.segment === g.segment);
+        const isCollapsed = collapsed.has(key);
         return (
           <div key={key} style={{ marginBottom: 16 }}>
-            <div className="section-label">{g.label}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {items.map((t) => (
-                <div key={t.id} className="card" style={{ opacity: t.active ? 1 : 0.55 }}>
-                  <p style={{ margin: 0, fontSize: 13.5 }}>{t.item_text}</p>
-                  <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap", fontSize: 11.5, color: "var(--muted)" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input
-                        type="checkbox"
-                        checked={t.requires_photo}
-                        disabled={busyId === t.id}
-                        onChange={(e) => toggle(t.id, "requiresPhoto", e.target.checked)}
-                      />
-                      Requires photo
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input
-                        type="checkbox"
-                        checked={t.first_shift_only}
-                        disabled={busyId === t.id}
-                        onChange={(e) => toggle(t.id, "firstShiftOnly", e.target.checked)}
-                      />
-                      First shift only
-                    </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <input
-                        type="checkbox"
-                        checked={t.last_shift_only}
-                        disabled={busyId === t.id}
-                        onChange={(e) => toggle(t.id, "lastShiftOnly", e.target.checked)}
-                      />
-                      Last shift only
-                    </label>
-                    <button
-                      disabled={busyId === t.id}
-                      onClick={() => toggle(t.id, "active", !t.active)}
-                      style={{ fontSize: 11.5, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
-                    >
-                      {t.active ? "Deactivate" : "Reactivate"}
-                    </button>
-                  </div>
+            <button
+              onClick={() => toggleCollapsed(key)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                width: "100%",
+                background: "none",
+                border: "none",
+                padding: "8px 2px",
+                cursor: "pointer",
+              }}
+            >
+              <span className="section-label" style={{ margin: 0 }}>
+                {g.label} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({items.length})</span>
+              </span>
+              <span style={{ fontSize: 13, color: "var(--muted)" }}>{isCollapsed ? "Show" : "Hide"}</span>
+            </button>
+            {!isCollapsed && (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {items.map((t, i) => (
+                    <div key={t.id} className="card" style={{ opacity: t.active ? 1 : 0.55 }}>
+                      {editingId === t.id ? (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <input
+                            type="text"
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            style={{ ...inputStyle(), flex: 1 }}
+                            autoFocus
+                          />
+                          <button
+                            className="btn"
+                            style={{ padding: "6px 10px", width: "auto" }}
+                            disabled={busyId === t.id || !editText.trim()}
+                            onClick={() => saveEdit(t.id)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                          <p style={{ margin: 0, fontSize: 13.5 }}>{t.item_text}</p>
+                          <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                            <button
+                              disabled={busyId === t.id || i === 0}
+                              onClick={() => move(items, i, -1)}
+                              title="Move up"
+                              style={{ fontSize: 12, padding: "2px 7px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                            >
+                              ^
+                            </button>
+                            <button
+                              disabled={busyId === t.id || i === items.length - 1}
+                              onClick={() => move(items, i, 1)}
+                              title="Move down"
+                              style={{ fontSize: 12, padding: "2px 7px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                            >
+                              v
+                            </button>
+                            <button
+                              disabled={busyId === t.id}
+                              onClick={() => startEdit(t)}
+                              style={{ fontSize: 11.5, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap", fontSize: 11.5, color: "var(--muted)" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={t.requires_photo}
+                            disabled={busyId === t.id}
+                            onChange={(e) => toggle(t.id, "requiresPhoto", e.target.checked)}
+                          />
+                          Requires photo
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={t.first_shift_only}
+                            disabled={busyId === t.id}
+                            onChange={(e) => toggle(t.id, "firstShiftOnly", e.target.checked)}
+                          />
+                          First shift only
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <input
+                            type="checkbox"
+                            checked={t.last_shift_only}
+                            disabled={busyId === t.id}
+                            onChange={(e) => toggle(t.id, "lastShiftOnly", e.target.checked)}
+                          />
+                          Last shift only
+                        </label>
+                        <button
+                          disabled={busyId === t.id}
+                          onClick={() => toggle(t.id, "active", !t.active)}
+                          style={{ fontSize: 11.5, padding: "2px 6px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                        >
+                          {t.active ? "Deactivate" : "Reactivate"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-              <input
-                type="text"
-                placeholder="New item text"
-                value={newText[key] || ""}
-                onChange={(e) => setNewText((s) => ({ ...s, [key]: e.target.value }))}
-                style={{ ...inputStyle(), flex: 1 }}
-              />
-              <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-                <input
-                  type="checkbox"
-                  checked={!!newPhoto[key]}
-                  onChange={(e) => setNewPhoto((s) => ({ ...s, [key]: e.target.checked }))}
-                />
-                Photo
-              </label>
-              <button
-                className="btn"
-                style={{ padding: "6px 10px" }}
-                disabled={!newText[key]?.trim() || adding === key}
-                onClick={() => addItem(g.role, g.segment)}
-              >
-                Add
-              </button>
-            </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <input
+                    type="text"
+                    placeholder="New item text"
+                    value={newText[key] || ""}
+                    onChange={(e) => setNewText((s) => ({ ...s, [key]: e.target.value }))}
+                    style={{ ...inputStyle(), flex: 1 }}
+                  />
+                  <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={!!newPhoto[key]}
+                      onChange={(e) => setNewPhoto((s) => ({ ...s, [key]: e.target.checked }))}
+                    />
+                    Photo
+                  </label>
+                  <button
+                    className="btn"
+                    style={{ padding: "6px 10px", width: "auto" }}
+                    disabled={!newText[key]?.trim() || adding === key}
+                    onClick={() => addItem(g.role, g.segment)}
+                  >
+                    Add
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         );
       })}

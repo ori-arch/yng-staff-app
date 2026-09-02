@@ -86,7 +86,7 @@ function monthLabel(d: Date) {
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 function inputStyle(extra?: object) {
-  return { padding: 9, borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13.5, ...extra };
+  return { padding: "11px 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 14.5, ...extra };
 }
 
 /** Monday on/before `d`, and Sunday on/after `d`, for a full-week calendar grid. */
