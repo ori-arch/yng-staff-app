@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { notifyEmployees } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -116,6 +117,32 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .single();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Notify whoever should hear about this — the other DM participant, or
+  // (for a broadcast) everyone else on staff — via the bell icon and push.
+  const preview = body.trim().length > 120 ? `${body.trim().slice(0, 117)}...` : body.trim();
+  if (channel.type === "dm") {
+    const { data: members } = await supabase
+      .from("channel_members")
+      .select("employee_id")
+      .eq("channel_id", params.id)
+      .neq("employee_id", session.employeeId);
+    const recipientIds = (members ?? []).map((m) => m.employee_id);
+    await notifyEmployees(supabase, recipientIds, {
+      type: "message",
+      title: `New message from ${session.name}`,
+      body: preview,
+      link: `/messages/${params.id}`,
+    });
+  } else {
+    const { data: recipients } = await supabase.from("employees").select("id").eq("active", true).neq("id", session.employeeId);
+    await notifyEmployees(supabase, (recipients ?? []).map((e) => e.id), {
+      type: "broadcast",
+      title: `Broadcast from ${session.name}`,
+      body: preview,
+      link: `/messages/${params.id}`,
+    });
   }
 
   return NextResponse.json({

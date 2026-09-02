@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import NotificationBell from "./NotificationBell";
 
 export type ShellSession = {
   name: string;
@@ -157,7 +158,8 @@ export default function AppShell({ session, children }: { session: ShellSession 
               <img src="/logo-black.png" alt="yng." className="logo-img" />
             </a>
           </div>
-          <div className="header-right">
+          <div className="header-right" style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <NotificationBell />
             <button className="icon-btn" aria-label="Menu" onClick={() => setOpen(true)}>
               <MenuIcon />
             </button>
