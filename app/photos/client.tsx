@@ -78,13 +78,47 @@ export default function Photos() {
             <button
               key={p.id}
               onClick={() => setOpen(p)}
-              style={{ padding: 0, border: "none", background: "none", cursor: "pointer", aspectRatio: "1 / 1" }}
+              style={{
+                padding: 0,
+                border: "none",
+                background: "none",
+                cursor: "pointer",
+                aspectRatio: "1 / 1",
+                position: "relative",
+                borderRadius: 10,
+                overflow: "hidden",
+              }}
             >
               <img
                 src={p.url}
                 alt={p.context}
                 style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 10, border: "1px solid var(--border)" }}
               />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: "12px 5px 4px",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.72), rgba(0,0,0,0))",
+                  textAlign: "left",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 700,
+                    color: "#fff",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {p.employeeName ?? "Unknown"}
+                </div>
+                <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.85)" }}>{fmtWhen(p.takenAt)}</div>
+              </div>
             </button>
           ))}
         </div>
@@ -102,9 +136,8 @@ export default function Photos() {
             <div style={{ marginTop: 12 }}>
               <span className="badge gold">{open.categoryLabel}</span>
               <p style={{ fontWeight: 600, fontSize: 15.5, margin: "8px 0 2px" }}>{open.context}</p>
-              <p style={{ fontSize: 13, color: "var(--muted)", margin: 0 }}>
-                {open.employeeName ?? "Unknown"} · {fmtWhen(open.takenAt)}
-              </p>
+              <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{open.employeeName ?? "Unknown"}</p>
+              <p style={{ fontSize: 13, color: "var(--muted)", margin: "2px 0 0" }}>{fmtWhen(open.takenAt)}</p>
             </div>
             <button className="btn outline" style={{ marginTop: 14 }} onClick={() => setOpen(null)}>
               Close

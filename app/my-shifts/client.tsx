@@ -14,7 +14,7 @@ type ShiftInstance = {
 
 type TimeOffBlock = { employeeId: string; employeeName: string; startDate: string; endDate: string; reason: string | null };
 
-const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const VIEWS = [
   { key: "list", label: "List" },
   { key: "calendar", label: "Calendar" },
@@ -42,9 +42,9 @@ function gridRange(monthAnchor: Date) {
   const first = new Date(Date.UTC(monthAnchor.getUTCFullYear(), monthAnchor.getUTCMonth(), 1));
   const last = new Date(Date.UTC(monthAnchor.getUTCFullYear(), monthAnchor.getUTCMonth() + 1, 0));
   const start = new Date(first);
-  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
   const end = new Date(last);
-  end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()));
+  end.setUTCDate(end.getUTCDate() + ((7 - end.getUTCDay()) % 7));
   return { start, end };
 }
 

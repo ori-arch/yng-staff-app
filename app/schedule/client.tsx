@@ -44,7 +44,24 @@ type Exception = {
   note: string | null;
 };
 
+// Index-aligned with JS Date.getUTCDay() (0 = Sunday .. 6 = Saturday) — this
+// is the convention shift_patterns.weekday is stored in, so keep this order
+// for the Weekly Patterns dropdown even though the calendar displays Monday-first.
 const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Display-only order for the calendar grid header (week starts Monday).
+const CALENDAR_HEADER_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+// Monday-first day picker for the "Add a recurring shift" form — value is the
+// underlying weekday index (0 = Sunday .. 6 = Saturday) so it still matches
+// what's stored in shift_patterns.weekday.
+const WEEKDAY_OPTIONS = [
+  { label: "Mon", value: 1 },
+  { label: "Tue", value: 2 },
+  { label: "Wed", value: 3 },
+  { label: "Thu", value: 4 },
+  { label: "Fri", value: 5 },
+  { label: "Sat", value: 6 },
+  { label: "Sun", value: 0 },
+];
 const TABS = [
   { key: "calendar", label: "Calendar" },
   { key: "patterns", label: "Weekly Patterns" },
@@ -64,14 +81,14 @@ function inputStyle(extra?: object) {
   return { padding: 9, borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13.5, ...extra };
 }
 
-/** Sunday on/before `d`, and Saturday on/after `d`, for a full-week calendar grid. */
+/** Monday on/before `d`, and Sunday on/after `d`, for a full-week calendar grid. */
 function gridRange(monthAnchor: Date): { start: Date; end: Date } {
   const first = new Date(Date.UTC(monthAnchor.getUTCFullYear(), monthAnchor.getUTCMonth(), 1));
   const last = new Date(Date.UTC(monthAnchor.getUTCFullYear(), monthAnchor.getUTCMonth() + 1, 0));
   const start = new Date(first);
-  start.setUTCDate(start.getUTCDate() - start.getUTCDay());
+  start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));
   const end = new Date(last);
-  end.setUTCDate(end.getUTCDate() + (6 - end.getUTCDay()));
+  end.setUTCDate(end.getUTCDate() + ((7 - end.getUTCDay()) % 7));
   return { start, end };
 }
 
@@ -179,7 +196,7 @@ function CalendarTab({ roster, onError }: { roster: Employee[]; onError: (e: str
         <p style={{ color: "var(--muted)", fontSize: 14, marginTop: 12 }}>Loading…</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginTop: 10 }}>
-          {WEEKDAY_LABELS.map((w) => (
+          {CALENDAR_HEADER_LABELS.map((w) => (
             <div key={w} style={{ fontSize: 11, color: "var(--muted)", textAlign: "center", fontWeight: 700 }}>
               {w}
             </div>
@@ -402,11 +419,20 @@ function DaySheet({
 function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: string | null) => void }) {
   const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [employeeId, setEmployeeId] = useState("");
-  const [weekday, setWeekday] = useState(1);
+  const [weekdays, setWeekdays] = useState<Set<number>>(new Set());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+
+  function toggleWeekday(value: number) {
+    setWeekdays((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  }
 
   function load() {
     fetch("/api/admin/shift-patterns")
@@ -427,21 +453,27 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
   }, [roster, employeeId]);
 
   async function addPattern() {
-    if (!employeeId) return;
+    if (!employeeId || weekdays.size === 0) return;
     setBusy(true);
     onError(null);
     try {
-      const res = await fetch("/api/admin/shift-patterns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, weekday, startTime, endTime, note }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        onError(data.error || "Could not save.");
+      // One recurring pattern per selected day, same time/note on each.
+      const results = await Promise.all(
+        Array.from(weekdays).map((weekday) =>
+          fetch("/api/admin/shift-patterns", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ employeeId, weekday, startTime, endTime, note }),
+          }).then(async (res) => ({ ok: res.ok, data: await res.json() }))
+        )
+      );
+      const failed = results.find((r) => !r.ok);
+      if (failed) {
+        onError(failed.data.error || "Could not save one or more days.");
         return;
       }
       setNote("");
+      setWeekdays(new Set());
       load();
     } finally {
       setBusy(false);
@@ -494,18 +526,43 @@ function PatternsTab({ roster, onError }: { roster: Employee[]; onError: (e: str
 
       <div className="section-label">Add a recurring shift</div>
       <div className="card" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-        <select value={weekday} onChange={(e) => setWeekday(Number(e.target.value))} style={inputStyle()}>
-          {WEEKDAY_LABELS.map((w, i) => (
-            <option key={w} value={i}>{w}</option>
-          ))}
-        </select>
+        <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Days (pick as many as apply)</label>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {WEEKDAY_OPTIONS.map((d) => {
+            const checked = weekdays.has(d.value);
+            return (
+              <label
+                key={d.value}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: 13,
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  border: checked ? "1.5px solid var(--ink)" : "1px solid var(--border-strong)",
+                  background: checked ? "var(--gold-soft)" : "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleWeekday(d.value)}
+                  style={{ margin: 0 }}
+                />
+                {d.label}
+              </label>
+            );
+          })}
+        </div>
         <div style={{ display: "flex", gap: 8 }}>
           <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle({ flex: 1 })} />
           <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle({ flex: 1 })} />
         </div>
         <input placeholder="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} style={inputStyle()} />
-        <button className="btn" onClick={addPattern} disabled={busy || !employeeId}>
-          {busy ? "Saving…" : "Add recurring shift"}
+        <button className="btn" onClick={addPattern} disabled={busy || !employeeId || weekdays.size === 0}>
+          {busy ? "Saving…" : weekdays.size > 1 ? `Add recurring shift (${weekdays.size} days)` : "Add recurring shift"}
         </button>
       </div>
     </div>
