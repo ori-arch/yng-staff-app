@@ -61,7 +61,7 @@ export async function getSchedule(
 
   let patternsQuery = supabase
     .from("shift_patterns")
-    .select("id, employee_id, weekday, start_time, end_time, note, employees(name)")
+    .select("id, employee_id, weekday, start_time, end_time, note, employees!shift_patterns_employee_id_fkey(name)")
     .eq("active", true);
   if (employeeId) patternsQuery = patternsQuery.eq("employee_id", employeeId);
   const { data: patterns, error: patternsError } = await patternsQuery;
@@ -69,7 +69,7 @@ export async function getSchedule(
 
   let exceptionsQuery = supabase
     .from("shift_exceptions")
-    .select("id, employee_id, date, action, start_time, end_time, note, employees(name)")
+    .select("id, employee_id, date, action, start_time, end_time, note, employees!shift_exceptions_employee_id_fkey(name)")
     .eq("active", true)
     .gte("date", startDate)
     .lte("date", endDate);

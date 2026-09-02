@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("shift_exceptions")
-    .select("id, employee_id, date, action, start_time, end_time, note, active, employees(name)")
+    .select("id, employee_id, date, action, start_time, end_time, note, active, employees!shift_exceptions_employee_id_fkey(name)")
     .eq("active", true)
     .gte("date", start)
     .lte("date", end)

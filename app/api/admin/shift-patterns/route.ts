@@ -18,7 +18,7 @@ export async function GET() {
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("shift_patterns")
-    .select("id, employee_id, weekday, start_time, end_time, note, active, created_at, employees(name)")
+    .select("id, employee_id, weekday, start_time, end_time, note, active, created_at, employees!shift_patterns_employee_id_fkey(name)")
     .order("weekday")
     .order("start_time");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

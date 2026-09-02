@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const { shifts, timeOff } = await getSchedule(supabase, { startDate: start, endDate: end, employeeId });
     return NextResponse.json({ shifts, timeOff }, { headers: NO_STORE });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load schedule.";
+    const message = err instanceof Error ? err.message : (err as { message?: string })?.message || "Failed to load schedule.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
