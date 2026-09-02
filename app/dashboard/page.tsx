@@ -19,6 +19,8 @@ const TILES: Record<string, Tile> = {
   admin: { href: "/admin", label: "Admin Panel", sub: "Team, rooms, checklists" },
   compliance: { href: "/compliance", label: "Compliance", sub: "Who did what today" },
   photos: { href: "/photos", label: "Photos", sub: "Everything staff have captured" },
+  schedule: { href: "/schedule", label: "Schedule", sub: "Build the team's shifts" },
+  myShifts: { href: "/my-shifts", label: "My Shifts", sub: "Your upcoming schedule" },
   broadcast: { href: "/messages", label: "Send a Broadcast", sub: "Message the whole team", gold: true },
 };
 
@@ -136,7 +138,7 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
       <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment] : [TILES.equipment, TILES.restockRunner]} />
 
       <div className="section-label">Team</div>
-      <TileGrid tiles={[TILES.messages, TILES.protocols]} />
+      <TileGrid tiles={[TILES.myShifts, TILES.messages, TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Time off, shift swaps, facility duties and more are in the menu ☰
@@ -176,7 +178,7 @@ async function ManagerDashboard() {
       <TileGrid tiles={[TILES.broadcast, TILES.messages]} />
 
       <div className="section-label">Manage</div>
-      <TileGrid tiles={[TILES.admin, TILES.photos, TILES.protocols]} />
+      <TileGrid tiles={[TILES.schedule, TILES.admin, TILES.photos, TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Equipment and inventory logs, time off and more are in the menu ☰

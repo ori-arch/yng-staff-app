@@ -30,6 +30,7 @@ function navFor(session: ShellSession): NavGroup[] {
       label: "Your shift",
       links: [
         { href: "/checklists", label: "Open / Close Checklist" },
+        { href: "/my-shifts", label: "My Shifts" },
         ...(session.role === "aesthetician"
           ? [
               { href: "/equipment-log", label: "Equipment Log" },
@@ -69,6 +70,8 @@ function navFor(session: ShellSession): NavGroup[] {
       label: "Manage",
       links: [
         { href: "/compliance", label: "Compliance" },
+        { href: "/schedule", label: "Schedule" },
+        { href: "/my-shifts", label: "My Shifts" },
         { href: "/photos", label: "Photos" },
         { href: "/equipment-log", label: "Equipment Log" },
         { href: "/inventory/room-restocking", label: "Room Restocking" },
