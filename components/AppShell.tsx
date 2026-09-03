@@ -55,6 +55,7 @@ function navFor(session: ShellSession): NavGroup[] {
     links: [
       { href: "/messages", label: "Messages" },
       { href: "/protocols", label: "Protocols" },
+      { href: "/leaderboard", label: "Leaderboard" },
     ],
   });
 
@@ -80,6 +81,7 @@ function navFor(session: ShellSession): NavGroup[] {
         { href: "/inventory/room-restocking", label: "Room Restocking" },
         { href: "/inventory/restock-runner", label: "Restock Runner" },
         { href: "/inventory/loft-cleaning", label: "Loft Cleaning" },
+        { href: "/leaderboard/manage", label: "Leaderboard — Manage" },
         { href: "/admin", label: "Admin Panel" },
       ],
     });
