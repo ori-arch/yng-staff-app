@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 type Photo = {
   id: string;
   url: string;
-  category: "checklist" | "equipment" | "room_restocking";
+  category: "checklist" | "equipment" | "room_restocking" | "room_issue";
   categoryLabel: string;
   context: string;
   employeeName: string | null;
@@ -17,6 +17,7 @@ const FILTERS = [
   { key: "checklist", label: "Checklists" },
   { key: "equipment", label: "Equipment" },
   { key: "room_restocking", label: "Room Restocking" },
+  { key: "room_issue", label: "Room Issues" },
 ] as const;
 
 function fmtWhen(iso: string) {

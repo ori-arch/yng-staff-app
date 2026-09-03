@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 type Employee = { id: string; name: string; role: string; active: boolean };
-type Category = { id: string; key: string; label: string; points: number; displayOrder: number; active: boolean };
+type Category = { id: string; key: string; label: string; description: string | null; points: number; displayOrder: number; active: boolean };
 type Cycle = {
   id: string;
   name: string;
@@ -247,15 +247,18 @@ function CategoriesTab({
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editPoints, setEditPoints] = useState("");
 
   const [newKey, setNewKey] = useState("");
   const [newLabel, setNewLabel] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [newPoints, setNewPoints] = useState("");
 
   function startEdit(c: Category) {
     setEditingId(c.id);
     setEditLabel(c.label);
+    setEditDescription(c.description ?? "");
     setEditPoints(String(c.points));
   }
 
@@ -268,7 +271,7 @@ function CategoriesTab({
     const res = await fetch(`/api/leaderboard/categories/${id}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ label: editLabel.trim(), points }),
+      body: JSON.stringify({ label: editLabel.trim(), description: editDescription.trim(), points }),
     });
     const data = await res.json();
     if (!res.ok) setError(data.error);
@@ -298,13 +301,20 @@ function CategoriesTab({
     const res = await fetch("/api/leaderboard/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: newKey.trim(), label: newLabel.trim(), points, displayOrder: categories.length + 1 }),
+      body: JSON.stringify({
+        key: newKey.trim(),
+        label: newLabel.trim(),
+        description: newDescription.trim(),
+        points,
+        displayOrder: categories.length + 1,
+      }),
     });
     const data = await res.json();
     if (!res.ok) setError(data.error);
     else {
       setNewKey("");
       setNewLabel("");
+      setNewDescription("");
       setNewPoints("");
       reload();
     }
@@ -319,26 +329,39 @@ function CategoriesTab({
         {categories.map((c) => (
           <div key={c.id} className="card" style={{ padding: 10, opacity: c.active ? 1 : 0.55 }}>
             {editingId === c.id ? (
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <input style={{ ...inputStyle(), flex: 1 }} value={editLabel} onChange={(e) => setEditLabel(e.target.value)} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input style={{ ...inputStyle(), flex: 1 }} value={editLabel} onChange={(e) => setEditLabel(e.target.value)} />
+                  <input
+                    style={{ ...inputStyle(), width: 70 }}
+                    type="number"
+                    value={editPoints}
+                    onChange={(e) => setEditPoints(e.target.value)}
+                  />
+                </div>
                 <input
-                  style={{ ...inputStyle(), width: 70 }}
-                  type="number"
-                  value={editPoints}
-                  onChange={(e) => setEditPoints(e.target.value)}
+                  style={inputStyle()}
+                  placeholder="What qualifies for this (shown to staff)"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
                 />
-                <button className="btn outline sm" onClick={() => saveEdit(c.id)}>
-                  Save
-                </button>
-                <button className="btn ghost sm" onClick={() => setEditingId(null)}>
-                  Cancel
-                </button>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button className="btn outline sm" onClick={() => saveEdit(c.id)}>
+                    Save
+                  </button>
+                  <button className="btn ghost sm" onClick={() => setEditingId(null)}>
+                    Cancel
+                  </button>
+                </div>
               </div>
             ) : (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 13.5 }}>
-                  {c.label} <span style={{ color: "var(--muted)" }}>({c.key})</span>
-                </span>
+                <div>
+                  <div style={{ fontSize: 13.5 }}>
+                    {c.label} <span style={{ color: "var(--muted)" }}>({c.key})</span>
+                  </div>
+                  {c.description && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{c.description}</div>}
+                </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <span style={{ fontWeight: 700, fontSize: 14 }}>{c.points} pts</span>
                   <button className="btn ghost sm" onClick={() => startEdit(c)}>
@@ -358,6 +381,12 @@ function CategoriesTab({
       <div className="card" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
         <input style={inputStyle()} placeholder="Key (e.g. retail_sale)" value={newKey} onChange={(e) => setNewKey(e.target.value)} />
         <input style={inputStyle()} placeholder="Label shown to staff" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+        <input
+          style={inputStyle()}
+          placeholder="What qualifies for this (shown to staff)"
+          value={newDescription}
+          onChange={(e) => setNewDescription(e.target.value)}
+        />
         <input style={inputStyle()} type="number" placeholder="Points" value={newPoints} onChange={(e) => setNewPoints(e.target.value)} />
         <button className="btn outline" onClick={addCategory}>
           Add Category

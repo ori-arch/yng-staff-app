@@ -17,6 +17,7 @@ export type LeaderboardCategory = {
   id: string;
   key: string;
   label: string;
+  description: string | null;
   points: number;
   displayOrder: number;
   active: boolean;
@@ -64,6 +65,7 @@ export async function getCategories(supabase: SupabaseClient, activeOnly = true)
     id: c.id,
     key: c.key,
     label: c.label,
+    description: c.description ?? null,
     points: c.points,
     displayOrder: c.display_order,
     active: c.active,

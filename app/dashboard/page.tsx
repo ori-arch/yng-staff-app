@@ -3,6 +3,8 @@ import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getSegmentStatus } from "@/lib/checklists";
 import { getActiveCycle, computeStandings, daysRemaining, StandingRow, LeaderboardCycle } from "@/lib/leaderboard";
+import { needsPolicyAcknowledgment } from "@/lib/policy";
+import { computeConductStatus, ConductStatus } from "@/lib/warnings";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,6 +27,8 @@ const TILES: Record<string, Tile> = {
   broadcast: { href: "/broadcast", label: "Send a Broadcast", sub: "Message the whole team", gold: true },
   leaderboard: { href: "/leaderboard", label: "Leaderboard", sub: "This cycle's standings" },
   leaderboardManage: { href: "/leaderboard/manage", label: "Leaderboard — Manage", sub: "Cycles, points, entries" },
+  roomIssues: { href: "/room-issues", label: "Report a Room Issue", sub: "Room not ready? Photo it" },
+  roomIssuesManage: { href: "/room-issues", label: "Room Issue Reports", sub: "Open & resolved reports" },
 };
 
 function TileGrid({ tiles }: { tiles: Tile[] }) {
@@ -124,9 +128,43 @@ function LeaderboardWidget({ cycle, standings, myEmployeeId }: { cycle: Leaderbo
   );
 }
 
+/** Above-the-fold, but deliberately understated -- a color/emoji summary of where an
+ * employee stands, never the loudest thing on the screen. Links to the full picture. */
+function ConductStatusWidget({ status }: { status: ConductStatus }) {
+  const bg = status.level === "good" ? "var(--surface)" : status.level === "watch" ? "#fbf1dc" : "#fbe9e8";
+  const fg = status.level === "good" ? "var(--muted)" : status.level === "watch" ? "#a6790a" : "#b3261e";
+  return (
+    <a
+      href="/warnings"
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "9px 12px",
+        borderRadius: 10,
+        background: bg,
+        color: fg,
+        fontSize: 13,
+        fontWeight: 600,
+        textDecoration: "none",
+        margin: "10px 0",
+      }}
+    >
+      <span>{status.emoji} {status.message}</span>
+      <span style={{ fontSize: 11.5, fontWeight: 500 }}>Details ›</span>
+    </a>
+  );
+}
+
 export default async function DashboardPage() {
   const session = getSession();
   if (!session) redirect("/");
+
+  const supabase = supabaseAdmin();
+  if (!session.isOwner) {
+    const { needed } = await needsPolicyAcknowledgment(supabase, session.employeeId);
+    if (needed) redirect("/policy/sign");
+  }
 
   const isManager = session.role === "manager" || session.isAdmin;
   const firstName = session.name.split(" ")[0];
@@ -155,7 +193,11 @@ const SEGMENT_META: Record<string, { title: string; sub: string }> = {
 };
 
 async function StaffDashboard({ employeeId, role }: { employeeId: string; role: string }) {
-  const [segments, leaderboard] = await Promise.all([getSegmentStatus(employeeId, role), getLeaderboardSnapshot()]);
+  const [segments, leaderboard, conductStatus] = await Promise.all([
+    getSegmentStatus(employeeId, role),
+    getLeaderboardSnapshot(),
+    computeConductStatus(supabaseAdmin(), employeeId),
+  ]);
   const allDone = segments.length > 0 && segments.every((s) => s.completedToday);
 
   return (
@@ -187,6 +229,8 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
         )}
       </div>
 
+      <ConductStatusWidget status={conductStatus} />
+
       {leaderboard && (
         <>
           <div className="section-label">Leaderboard</div>
@@ -195,7 +239,7 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
       )}
 
       <div className="section-label">Quick log</div>
-      <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment] : [TILES.equipment, TILES.restockRunner]} />
+      <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment, TILES.roomIssues] : [TILES.equipment, TILES.restockRunner, TILES.roomIssues]} />
 
       <div className="section-label">Team</div>
       <TileGrid tiles={[TILES.myShifts, TILES.messages, TILES.protocols]} />
@@ -245,7 +289,7 @@ async function ManagerDashboard() {
       <TileGrid tiles={[TILES.broadcast, TILES.messages]} />
 
       <div className="section-label">Manage</div>
-      <TileGrid tiles={[TILES.schedule, TILES.admin, TILES.leaderboardManage, TILES.photos, TILES.protocols]} />
+      <TileGrid tiles={[TILES.schedule, TILES.admin, TILES.leaderboardManage, TILES.roomIssuesManage, TILES.photos, TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Equipment and inventory logs, time off and more are in the menu ☰

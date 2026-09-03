@@ -46,6 +46,7 @@ const TABS = [
   { key: "checklists", label: "Checklists" },
   { key: "parLevels", label: "Par Levels" },
   { key: "broadcastTemplates", label: "Broadcast Templates" },
+  { key: "conductPolicy", label: "Conduct Policy" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -78,6 +79,7 @@ export default function Admin({ isOwner, myEmployeeId }: { isOwner: boolean; myE
       {tab === "checklists" && <ChecklistsTab setError={setError} />}
       {tab === "parLevels" && <ParLevelsTab setError={setError} />}
       {tab === "broadcastTemplates" && <BroadcastTemplatesTab setError={setError} />}
+      {tab === "conductPolicy" && <ConductPolicyTab setError={setError} />}
     </div>
   );
 }
@@ -1102,6 +1104,445 @@ function BroadcastTemplatesTab({ setError }: { setError: (e: string | null) => v
           );
         })}
       </div>
+    </>
+  );
+}
+
+/* ---------------- Conduct Policy ---------------- */
+
+type ViolationType = {
+  id: string;
+  key: string;
+  name: string;
+  track: "green" | "yellow" | "red";
+  levelLabel: string;
+  description: string;
+  recommendedAction: string | null;
+  strikeLimit: number;
+  resetPeriod: "quarterly" | "annually" | "never";
+  displayOrder: number;
+  active: boolean;
+};
+
+const TRACK_META: Record<string, { emoji: string; label: string }> = {
+  green: { emoji: "🟢", label: "Green" },
+  yellow: { emoji: "🟡", label: "Yellow" },
+  red: { emoji: "🔴", label: "Red" },
+};
+
+function ConductPolicyTab({ setError }: { setError: (e: string | null) => void }) {
+  const [types, setTypes] = useState<ViolationType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [edits, setEdits] = useState<Record<string, Partial<ViolationType>>>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [newType, setNewType] = useState({
+    key: "",
+    name: "",
+    track: "green" as "green" | "yellow" | "red",
+    levelLabel: "",
+    description: "",
+    recommendedAction: "",
+    strikeLimit: "3",
+    resetPeriod: "quarterly" as "quarterly" | "annually" | "never",
+  });
+  const [adding, setAdding] = useState(false);
+
+  const [policyTitle, setPolicyTitle] = useState("");
+  const [policyBody, setPolicyBody] = useState("");
+  const [policyVersion, setPolicyVersion] = useState<number | null>(null);
+  const [loadingPolicy, setLoadingPolicy] = useState(true);
+  const [savingPolicy, setSavingPolicy] = useState(false);
+  const [confirmingPolicy, setConfirmingPolicy] = useState(false);
+
+  function loadTypes() {
+    fetch("/api/admin/violation-types?all=1")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else setTypes(data.violationTypes ?? []);
+      })
+      .finally(() => setLoadingTypes(false));
+  }
+
+  function loadPolicy() {
+    fetch("/api/policy")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) setError(data.error);
+        else if (data.policy) {
+          setPolicyTitle(data.policy.title ?? "");
+          setPolicyBody(data.policy.body ?? "");
+          setPolicyVersion(data.policy.version ?? null);
+        }
+      })
+      .finally(() => setLoadingPolicy(false));
+  }
+
+  useEffect(() => {
+    loadTypes();
+    loadPolicy();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function startEdit(t: ViolationType) {
+    setExpandedId(t.id);
+    setEdits((s) => ({
+      ...s,
+      [t.id]: {
+        name: t.name,
+        levelLabel: t.levelLabel,
+        description: t.description,
+        recommendedAction: t.recommendedAction ?? "",
+        strikeLimit: t.strikeLimit,
+        resetPeriod: t.resetPeriod,
+        track: t.track,
+      },
+    }));
+  }
+
+  async function saveType(id: string) {
+    const e = edits[id];
+    if (!e) return;
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/violation-types/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: e.name,
+          levelLabel: e.levelLabel,
+          description: e.description,
+          recommendedAction: e.recommendedAction,
+          strikeLimit: typeof e.strikeLimit === "string" ? parseInt(e.strikeLimit, 10) : e.strikeLimit,
+          resetPeriod: e.resetPeriod,
+          track: e.track,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setExpandedId(null);
+        loadTypes();
+      } else setError(data.error || "Could not save.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function toggleActive(t: ViolationType) {
+    setBusyId(t.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/violation-types/${t.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !t.active }),
+      });
+      const data = await res.json();
+      if (res.ok) loadTypes();
+      else setError(data.error || "Could not update.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function addType() {
+    if (!newType.key.trim() || !newType.name.trim() || !newType.levelLabel.trim() || !newType.description.trim()) {
+      setError("Key, name, level label and description are required.");
+      return;
+    }
+    setAdding(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/admin/violation-types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newType,
+          strikeLimit: parseInt(newType.strikeLimit, 10) || 3,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNewType({
+          key: "",
+          name: "",
+          track: "green",
+          levelLabel: "",
+          description: "",
+          recommendedAction: "",
+          strikeLimit: "3",
+          resetPeriod: "quarterly",
+        });
+        setShowAdd(false);
+        loadTypes();
+      } else setError(data.error || "Could not add violation type.");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function savePolicy() {
+    setSavingPolicy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/policy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: policyTitle, body: policyBody }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPolicyVersion(data.version ?? null);
+        setConfirmingPolicy(false);
+      } else setError(data.error || "Could not save the policy.");
+    } finally {
+      setSavingPolicy(false);
+    }
+  }
+
+  const grouped: Record<string, ViolationType[]> = { green: [], yellow: [], red: [] };
+  types.forEach((t) => grouped[t.track]?.push(t));
+
+  return (
+    <>
+      <div className="section-label">Violation types &amp; strike framework</div>
+      <p style={{ color: "var(--muted)", fontSize: 13, marginTop: -4 }}>
+        These drive the Green / Yellow / Red tracks staff see on the Conduct Policy page and when a warning is issued. Editing a type
+        only changes what applies going forward — past warnings keep the details they were issued under.
+      </p>
+
+      {loadingTypes ? (
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
+      ) : (
+        (["green", "yellow", "red"] as const).map((track) => (
+          <div key={track} style={{ marginTop: 10 }}>
+            <div className="section-label" style={{ marginBottom: 6 }}>
+              {TRACK_META[track].emoji} {TRACK_META[track].label} track
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {grouped[track].map((t) => {
+                const e = edits[t.id] ?? {};
+                const isOpen = expandedId === t.id;
+                return (
+                  <div key={t.id} className="card" style={{ opacity: t.active ? 1 : 0.55 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontWeight: 600, fontSize: 14 }}>
+                        {t.name}
+                        {!t.active && <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 400 }}> · Inactive</span>}
+                      </span>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          onClick={() => (isOpen ? setExpandedId(null) : startEdit(t))}
+                          style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                        >
+                          {isOpen ? "Close" : "Edit"}
+                        </button>
+                        <button
+                          disabled={busyId === t.id}
+                          onClick={() => toggleActive(t)}
+                          style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                        >
+                          {t.active ? "Deactivate" : "Reactivate"}
+                        </button>
+                      </div>
+                    </div>
+                    <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
+                      {t.levelLabel} · strike limit {t.strikeLimit} · resets {t.resetPeriod}
+                    </p>
+                    <p style={{ margin: "4px 0 0", fontSize: 13 }}>{t.description}</p>
+
+                    {isOpen && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                        <input
+                          placeholder="Name"
+                          value={e.name ?? ""}
+                          onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], name: ev.target.value } }))}
+                          style={inputStyle()}
+                        />
+                        <select
+                          value={e.track ?? t.track}
+                          onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], track: ev.target.value as any } }))}
+                          style={inputStyle()}
+                        >
+                          <option value="green">🟢 Green</option>
+                          <option value="yellow">🟡 Yellow</option>
+                          <option value="red">🔴 Red</option>
+                        </select>
+                        <input
+                          placeholder="Level label (e.g. Level 1 — Coaching)"
+                          value={e.levelLabel ?? ""}
+                          onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], levelLabel: ev.target.value } }))}
+                          style={inputStyle()}
+                        />
+                        <textarea
+                          placeholder="Description"
+                          value={e.description ?? ""}
+                          onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], description: ev.target.value } }))}
+                          rows={2}
+                          style={{ ...inputStyle(), fontFamily: "inherit" }}
+                        />
+                        <textarea
+                          placeholder="Recommended action (optional)"
+                          value={e.recommendedAction ?? ""}
+                          onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], recommendedAction: ev.target.value } }))}
+                          rows={2}
+                          style={{ ...inputStyle(), fontFamily: "inherit" }}
+                        />
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <label style={{ fontSize: 12, color: "var(--muted)" }}>Strike limit</label>
+                            <input
+                              type="number"
+                              value={e.strikeLimit ?? t.strikeLimit}
+                              onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], strikeLimit: ev.target.value as any } }))}
+                              style={{ ...inputStyle(), width: 70 }}
+                            />
+                          </div>
+                          <select
+                            value={e.resetPeriod ?? t.resetPeriod}
+                            onChange={(ev) => setEdits((s) => ({ ...s, [t.id]: { ...s[t.id], resetPeriod: ev.target.value as any } }))}
+                            style={inputStyle()}
+                          >
+                            <option value="quarterly">Resets quarterly</option>
+                            <option value="annually">Resets annually</option>
+                            <option value="never">Never resets</option>
+                          </select>
+                        </div>
+                        <button className="btn gold" disabled={busyId === t.id} onClick={() => saveType(t.id)}>
+                          {busyId === t.id ? "Saving…" : "Save changes"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {grouped[track].length === 0 && <p style={{ color: "var(--muted)", fontSize: 13 }}>No violation types on this track yet.</p>}
+            </div>
+          </div>
+        ))
+      )}
+
+      <div style={{ marginTop: 12 }}>
+        {!showAdd ? (
+          <button className="btn outline sm" onClick={() => setShowAdd(true)}>
+            Add a violation type
+          </button>
+        ) : (
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0 }}>New violation type</p>
+            <input
+              placeholder="Key (e.g. late_arrival)"
+              value={newType.key}
+              onChange={(e) => setNewType((s) => ({ ...s, key: e.target.value }))}
+              style={inputStyle()}
+            />
+            <input
+              placeholder="Name (shown to staff)"
+              value={newType.name}
+              onChange={(e) => setNewType((s) => ({ ...s, name: e.target.value }))}
+              style={inputStyle()}
+            />
+            <select value={newType.track} onChange={(e) => setNewType((s) => ({ ...s, track: e.target.value as any }))} style={inputStyle()}>
+              <option value="green">🟢 Green</option>
+              <option value="yellow">🟡 Yellow</option>
+              <option value="red">🔴 Red</option>
+            </select>
+            <input
+              placeholder="Level label"
+              value={newType.levelLabel}
+              onChange={(e) => setNewType((s) => ({ ...s, levelLabel: e.target.value }))}
+              style={inputStyle()}
+            />
+            <textarea
+              placeholder="Description"
+              value={newType.description}
+              onChange={(e) => setNewType((s) => ({ ...s, description: e.target.value }))}
+              rows={2}
+              style={{ ...inputStyle(), fontFamily: "inherit" }}
+            />
+            <textarea
+              placeholder="Recommended action (optional)"
+              value={newType.recommendedAction}
+              onChange={(e) => setNewType((s) => ({ ...s, recommendedAction: e.target.value }))}
+              rows={2}
+              style={{ ...inputStyle(), fontFamily: "inherit" }}
+            />
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="number"
+                placeholder="Strike limit"
+                value={newType.strikeLimit}
+                onChange={(e) => setNewType((s) => ({ ...s, strikeLimit: e.target.value }))}
+                style={{ ...inputStyle(), width: 100 }}
+              />
+              <select
+                value={newType.resetPeriod}
+                onChange={(e) => setNewType((s) => ({ ...s, resetPeriod: e.target.value as any }))}
+                style={inputStyle()}
+              >
+                <option value="quarterly">Resets quarterly</option>
+                <option value="annually">Resets annually</option>
+                <option value="never">Never resets</option>
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn gold" disabled={adding} onClick={addType}>
+                {adding ? "Adding…" : "Add violation type"}
+              </button>
+              <button className="btn ghost" onClick={() => setShowAdd(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="section-label" style={{ marginTop: 20 }}>
+        Conduct policy document
+      </div>
+      <p style={{ color: "var(--muted)", fontSize: 13, marginTop: -4 }}>
+        This is the text staff read and sign on {"/policy/sign"}. Saving a change bumps the version and requires every employee to
+        re-read and re-sign it.
+      </p>
+      {loadingPolicy ? (
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
+      ) : (
+        <div className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {policyVersion !== null && <p style={{ fontSize: 12, color: "var(--muted)", margin: 0 }}>Current version: {policyVersion}</p>}
+          <input placeholder="Title" value={policyTitle} onChange={(e) => setPolicyTitle(e.target.value)} style={inputStyle()} />
+          <textarea
+            placeholder="Policy body"
+            value={policyBody}
+            onChange={(e) => setPolicyBody(e.target.value)}
+            rows={16}
+            style={{ ...inputStyle(), fontFamily: "inherit", whiteSpace: "pre-wrap" }}
+          />
+          {!confirmingPolicy ? (
+            <button className="btn outline sm" style={{ alignSelf: "flex-start" }} onClick={() => setConfirmingPolicy(true)}>
+              Save policy
+            </button>
+          ) : (
+            <div className="card" style={{ background: "#fbf1dc" }}>
+              <p style={{ fontSize: 13, margin: 0 }}>
+                This will bump the policy to version {(policyVersion ?? 0) + 1} and require everyone to re-sign before using the app
+                again. Continue?
+              </p>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button className="btn gold" disabled={savingPolicy} onClick={savePolicy}>
+                  {savingPolicy ? "Saving…" : "Yes, save and require re-signing"}
+                </button>
+                <button className="btn ghost" onClick={() => setConfirmingPolicy(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }

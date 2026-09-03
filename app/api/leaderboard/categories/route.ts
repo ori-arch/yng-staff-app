@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const session = getSession();
   if (!isManager(session)) return NextResponse.json({ error: "Managers only." }, { status: 403 });
 
-  const { key, label, points, displayOrder } = await req.json();
+  const { key, label, description, points, displayOrder } = await req.json();
   if (!key?.trim() || !label?.trim() || typeof points !== "number") {
     return NextResponse.json({ error: "key, label and points are required." }, { status: 400 });
   }
@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
     .insert({
       key: key.trim().toLowerCase().replace(/\s+/g, "_"),
       label: label.trim(),
+      description: typeof description === "string" && description.trim() ? description.trim() : null,
       points,
       display_order: typeof displayOrder === "number" ? displayOrder : 99,
     })

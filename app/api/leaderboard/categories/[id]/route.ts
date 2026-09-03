@@ -15,9 +15,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const session = getSession();
   if (!isManager(session)) return NextResponse.json({ error: "Managers only." }, { status: 403 });
 
-  const { label, points, displayOrder, active } = await req.json();
+  const { label, description, points, displayOrder, active } = await req.json();
   const updates: Record<string, unknown> = {};
   if (typeof label === "string" && label.trim()) updates.label = label.trim();
+  if (typeof description === "string") updates.description = description.trim() || null;
   if (typeof points === "number") updates.points = points;
   if (typeof displayOrder === "number") updates.display_order = displayOrder;
   if (typeof active === "boolean") updates.active = active;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-type Category = { id: string; key: string; label: string; points: number; displayOrder: number; active: boolean };
+type Category = { id: string; key: string; label: string; description: string | null; points: number; displayOrder: number; active: boolean };
 type Standing = {
   employeeId: string;
   employeeName: string;
@@ -124,6 +124,32 @@ export default function Leaderboard({ isManager, canLog }: { isManager: boolean;
             )}
           </div>
 
+          <div style={{ margin: "10px 0" }}>
+            <button className="btn outline sm" onClick={() => setShowHowItWorks(!showHowItWorks)}>
+              {showHowItWorks ? "Hide rules" : "📋 Rules — how points work"}
+            </button>
+            {showHowItWorks && (
+              <div className="card" style={{ padding: 12, marginTop: 8 }}>
+                {categories.map((c) => (
+                  <div key={c.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, fontWeight: 600 }}>
+                      <span>{c.label}</span>
+                      <span>{c.points} pts</span>
+                    </div>
+                    {c.description && <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{c.description}</div>}
+                  </div>
+                ))}
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span>• Points are flat per sale — a bigger ticket doesn't score higher.</span>
+                  <span>• You can undo a self-logged entry within 10 minutes; after that, ask a manager.</span>
+                  <span>• Standings reset at the start of each new cycle.</span>
+                  <span>• Everyone on the board can see everyone else's total.</span>
+                  <span>• Logs are self-reported and get checked against Zenoti before a winner is confirmed.</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {toast && (
             <div className="card gold" style={{ padding: 10, marginTop: 12 }}>
               <p style={{ margin: 0, fontSize: 13.5 }}>{toast}</p>
@@ -218,21 +244,6 @@ export default function Leaderboard({ isManager, canLog }: { isManager: boolean;
             ))}
           </div>
 
-          <div style={{ margin: "16px 0" }}>
-            <button className="btn outline sm" onClick={() => setShowHowItWorks(!showHowItWorks)}>
-              How points work
-            </button>
-            {showHowItWorks && (
-              <div className="card" style={{ padding: 12, marginTop: 8 }}>
-                {categories.map((c) => (
-                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "3px 0" }}>
-                    <span>{c.label}</span>
-                    <span style={{ fontWeight: 600 }}>{c.points} pts</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </>
       )}
     </div>

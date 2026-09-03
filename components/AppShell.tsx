@@ -46,6 +46,7 @@ function navFor(session: ShellSession): NavGroup[] {
       links: [
         { href: "/inventory/restock-runner", label: "Restock Runner" },
         { href: "/inventory/loft-cleaning", label: "Loft Cleaning" },
+        { href: "/room-issues", label: "Report a Room Issue" },
       ],
     });
   }
@@ -56,6 +57,7 @@ function navFor(session: ShellSession): NavGroup[] {
       { href: "/messages", label: "Messages" },
       { href: "/protocols", label: "Protocols" },
       { href: "/leaderboard", label: "Leaderboard" },
+      { href: "/policy", label: "Conduct Policy" },
     ],
   });
 
@@ -81,6 +83,7 @@ function navFor(session: ShellSession): NavGroup[] {
         { href: "/inventory/room-restocking", label: "Room Restocking" },
         { href: "/inventory/restock-runner", label: "Restock Runner" },
         { href: "/inventory/loft-cleaning", label: "Loft Cleaning" },
+        { href: "/room-issues", label: "Room Issue Reports" },
         { href: "/leaderboard/manage", label: "Leaderboard — Manage" },
         { href: "/admin", label: "Admin Panel" },
       ],

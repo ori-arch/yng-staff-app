@@ -6,5 +6,6 @@ export default function WarningDetailPage({ params }: { params: { id: string } }
   const session = getSession();
   if (!session) redirect("/");
 
-  return <WarningDetail id={params.id} />;
+  const isManager = session.role === "manager" || session.isAdmin;
+  return <WarningDetail id={params.id} isManager={isManager} />;
 }

@@ -11,7 +11,7 @@ const NO_STORE = { "Cache-Control": "no-store, no-cache, must-revalidate, max-ag
 type Photo = {
   id: string;
   url: string;
-  category: "checklist" | "equipment" | "room_restocking";
+  category: "checklist" | "equipment" | "room_restocking" | "room_issue";
   categoryLabel: string;
   context: string;
   employeeName: string | null;
@@ -20,9 +20,9 @@ type Photo = {
 
 /**
  * Manager/admin-only feed of every photo staff have taken across the app —
- * checklist photo steps, equipment log handpiece photos, and both Room
- * Restocking Log photos — newest first, so a manager can review compliance
- * without hunting through each individual log screen.
+ * checklist photo steps, equipment log handpiece photos, Room Restocking Log
+ * photos, and Room Issue reports — newest first, so a manager can review
+ * compliance without hunting through each individual log screen.
  */
 export async function GET() {
   const session = getSession();
@@ -36,7 +36,7 @@ export async function GET() {
 
   const supabase = supabaseAdmin();
 
-  const [checklistRes, equipmentRes, roomRes] = await Promise.all([
+  const [checklistRes, equipmentRes, roomRes, issueRes] = await Promise.all([
     supabase
       .from("checklist_submission_items")
       .select(
@@ -56,11 +56,17 @@ export async function GET() {
       .select("id, specific_item, created_at, empty_bottle_photo_url, new_item_photo_url, employees(name)")
       .order("created_at", { ascending: false })
       .limit(40),
+    supabase
+      .from("room_issue_reports")
+      .select("id, comment, status, created_at, photo_url, rooms(name), employees!room_issue_reports_employee_id_fkey(name)")
+      .order("created_at", { ascending: false })
+      .limit(40),
   ]);
 
   if (checklistRes.error) return NextResponse.json({ error: checklistRes.error.message }, { status: 500 });
   if (equipmentRes.error) return NextResponse.json({ error: equipmentRes.error.message }, { status: 500 });
   if (roomRes.error) return NextResponse.json({ error: roomRes.error.message }, { status: 500 });
+  if (issueRes.error) return NextResponse.json({ error: issueRes.error.message }, { status: 500 });
 
   const photos: Photo[] = [];
 
@@ -118,6 +124,21 @@ export async function GET() {
         takenAt: row.created_at,
       });
     }
+  }
+
+  for (const row of (issueRes.data ?? []) as any[]) {
+    const emp = Array.isArray(row.employees) ? row.employees[0] : row.employees;
+    const room = Array.isArray(row.rooms) ? row.rooms[0] : row.rooms;
+    if (!row.photo_url) continue;
+    photos.push({
+      id: `room_issue:${row.id}`,
+      url: row.photo_url,
+      category: "room_issue",
+      categoryLabel: "Room Issue",
+      context: `${room?.name ?? "No room selected"} — ${row.comment}${row.status === "resolved" ? " (resolved)" : ""}`,
+      employeeName: emp?.name ?? null,
+      takenAt: row.created_at,
+    });
   }
 
   photos.sort((a, b) => (b.takenAt || "").localeCompare(a.takenAt || ""));
