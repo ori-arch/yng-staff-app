@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getSegmentStatus } from "@/lib/checklists";
+import { getActiveCycle, computeStandings, daysRemaining, StandingRow, LeaderboardCycle } from "@/lib/leaderboard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -73,6 +74,56 @@ async function getManagerStats() {
   };
 }
 
+async function getLeaderboardSnapshot(): Promise<{ cycle: LeaderboardCycle; standings: StandingRow[] } | null> {
+  const supabase = supabaseAdmin();
+  const cycle = await getActiveCycle(supabase);
+  if (!cycle || cycle.status !== "open") return null;
+  const standings = await computeStandings(supabase, cycle.id);
+  return { cycle, standings };
+}
+
+/** Display-only standings on the home screen -- no logging here, that stays on /leaderboard.
+ * Shown to everyone, but this is the primary reason aestheticians open the app between clients. */
+function LeaderboardWidget({ cycle, standings, myEmployeeId }: { cycle: LeaderboardCycle; standings: StandingRow[]; myEmployeeId?: string }) {
+  const remaining = daysRemaining(cycle.endDate);
+  const top = standings.slice(0, 5);
+  return (
+    <a href="/leaderboard" className="card gold" style={{ display: "block", padding: 14, textDecoration: "none", color: "inherit" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <span style={{ fontWeight: 700, fontSize: 14.5 }}>🏆 {cycle.name}</span>
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>{remaining > 0 ? `${remaining}d left` : "Closing soon"}</span>
+      </div>
+      {cycle.prizeDescription && (
+        <div style={{ fontSize: 12.5, color: "var(--gold-dark)", fontWeight: 600, margin: "2px 0 8px" }}>{cycle.prizeDescription}</div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+        {top.length === 0 ? (
+          <span style={{ fontSize: 13, color: "var(--muted)" }}>No sales logged yet this cycle.</span>
+        ) : (
+          top.map((s, i) => (
+            <div
+              key={s.employeeId}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 13.5,
+                fontWeight: s.employeeId === myEmployeeId ? 700 : 500,
+              }}
+            >
+              <span>
+                #{i + 1} {s.employeeName}
+                {s.employeeId === myEmployeeId ? " (you)" : ""}
+              </span>
+              <span>{s.points} pts</span>
+            </div>
+          ))
+        )}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 10 }}>Tap to view full standings &amp; log a sale ›</div>
+    </a>
+  );
+}
+
 export default async function DashboardPage() {
   const session = getSession();
   if (!session) redirect("/");
@@ -104,7 +155,7 @@ const SEGMENT_META: Record<string, { title: string; sub: string }> = {
 };
 
 async function StaffDashboard({ employeeId, role }: { employeeId: string; role: string }) {
-  const segments = await getSegmentStatus(employeeId, role);
+  const [segments, leaderboard] = await Promise.all([getSegmentStatus(employeeId, role), getLeaderboardSnapshot()]);
   const allDone = segments.length > 0 && segments.every((s) => s.completedToday);
 
   return (
@@ -136,11 +187,18 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
         )}
       </div>
 
+      {leaderboard && (
+        <>
+          <div className="section-label">Leaderboard</div>
+          <LeaderboardWidget cycle={leaderboard.cycle} standings={leaderboard.standings} myEmployeeId={employeeId} />
+        </>
+      )}
+
       <div className="section-label">Quick log</div>
       <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment] : [TILES.equipment, TILES.restockRunner]} />
 
       <div className="section-label">Team</div>
-      <TileGrid tiles={[TILES.myShifts, TILES.leaderboard, TILES.messages, TILES.protocols]} />
+      <TileGrid tiles={[TILES.myShifts, TILES.messages, TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Time off, shift swaps, facility duties and more are in the menu ☰
@@ -150,7 +208,7 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
 }
 
 async function ManagerDashboard() {
-  const stats = await getManagerStats();
+  const [stats, leaderboard] = await Promise.all([getManagerStats(), getLeaderboardSnapshot()]);
 
   return (
     <>
@@ -169,6 +227,13 @@ async function ManagerDashboard() {
           <span className="label">Open warnings</span>
         </a>
       </div>
+
+      {leaderboard && (
+        <>
+          <div className="section-label">Leaderboard</div>
+          <LeaderboardWidget cycle={leaderboard.cycle} standings={leaderboard.standings} />
+        </>
+      )}
 
       <div className="section-label">Today</div>
       <div className="grid">
