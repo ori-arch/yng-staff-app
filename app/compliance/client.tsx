@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type SegmentStatus = {
   segment: string;
-  status: "done" | "missed" | "pending";
+  status: "done" | "missed" | "pending" | "not_scheduled";
   completedAt: string | null;
   warning: { id: string; status: string } | null;
 };
@@ -13,6 +13,7 @@ type EmployeeRow = {
   employeeId: string;
   name: string;
   role: string;
+  scheduled: boolean;
   segments: SegmentStatus[];
 };
 
@@ -24,6 +25,7 @@ const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = 
   done: { bg: "var(--success-soft)", fg: "var(--success)", label: "Done" },
   missed: { bg: "var(--danger-soft)", fg: "var(--danger)", label: "Missed" },
   pending: { bg: "var(--surface)", fg: "var(--muted)", label: "Pending" },
+  not_scheduled: { bg: "var(--surface)", fg: "var(--muted)", label: "Not scheduled" },
 };
 
 export default function ComplianceDashboard() {
@@ -104,6 +106,9 @@ export default function ComplianceDashboard() {
             <div key={row.employeeId} className="card">
               <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 8 }}>
                 {row.name} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}>({row.role.replace("_", " ")})</span>
+                {!row.scheduled && (
+                  <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}> · not on the schedule that day</span>
+                )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {row.segments.map((seg) => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getSchedule } from "@/lib/schedule";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = supabaseAdmin();
 
-  const [{ data: employees, error: empError }, { data: templates, error: tplError }] = await Promise.all([
+  const [{ data: employees, error: empError }, { data: templates, error: tplError }, { shifts, timeOff }] = await Promise.all([
     supabase
       .from("employees")
       .select("id, name, role")
@@ -43,9 +44,16 @@ export async function GET(req: NextRequest) {
       .in("role", ["front_desk", "aesthetician"])
       .order("name"),
     supabase.from("checklist_templates").select("role, segment").eq("active", true),
+    getSchedule(supabase, { startDate: date, endDate: date }),
   ]);
   if (empError) return NextResponse.json({ error: empError.message }, { status: 500 });
   if (tplError) return NextResponse.json({ error: tplError.message }, { status: 500 });
+
+  const scheduledIds = new Set(shifts.map((s) => s.employeeId));
+  const onApprovedTimeOffIds = new Set(
+    timeOff.filter((t) => date >= t.startDate && date <= t.endDate).map((t) => t.employeeId)
+  );
+  const isScheduled = (employeeId: string) => scheduledIds.has(employeeId) && !onApprovedTimeOffIds.has(employeeId);
 
   const segmentsByRole: Record<string, string[]> = {};
   for (const t of templates ?? []) {
@@ -70,10 +78,14 @@ export async function GET(req: NextRequest) {
 
   const rows = (employees ?? []).map((emp) => {
     const segments = segmentsByRole[emp.role] ?? [];
+    const scheduled = isScheduled(emp.id);
     const segmentStatuses = segments.map((segment) => {
       const sub = (submissions ?? []).find((s) => s.employee_id === emp.id && s.segment === segment);
       const done = Boolean(sub?.completed_at);
-      const status = done ? "done" : isPastDate ? "missed" : "pending";
+      // Someone who wasn't actually on the schedule that day (or was on
+      // approved time off) never had a checklist to do -- don't flag them
+      // as having missed one just because no submission exists.
+      const status = done ? "done" : !scheduled ? "not_scheduled" : isPastDate ? "missed" : "pending";
       const existingWarning = (warnings ?? []).find(
         (w) => w.employee_id === emp.id && w.source_table === `checklist:${segment}`
       );
@@ -84,7 +96,7 @@ export async function GET(req: NextRequest) {
         warning: existingWarning ? { id: existingWarning.id, status: existingWarning.status } : null,
       };
     });
-    return { employeeId: emp.id, name: emp.name, role: emp.role, segments: segmentStatuses };
+    return { employeeId: emp.id, name: emp.name, role: emp.role, scheduled, segments: segmentStatuses };
   });
 
   return NextResponse.json({ date, isPastDate, rows }, { headers: NO_STORE });
