@@ -110,6 +110,8 @@ function EmployeesTab({
   const [clearConfirmText, setClearConfirmText] = useState("");
   const [clearError, setClearError] = useState<string | null>(null);
   const [justCleared, setJustCleared] = useState<string | null>(null);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editNameText, setEditNameText] = useState("");
 
   function load() {
     fetch("/api/admin/employees")
@@ -188,6 +190,26 @@ function EmployeesTab({
     }
   }
 
+  async function saveName(id: string) {
+    if (!editNameText.trim()) return;
+    setBusyId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/employees/${id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editNameText.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEditingNameId(null);
+        load();
+      } else setError(data.error || "Could not save name.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function submitClear(id: string, name: string) {
     setBusyId(id);
     setClearError(null);
@@ -251,12 +273,47 @@ function EmployeesTab({
         {employees.map((e) => (
           <div key={e.id} className="card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
-              <span style={{ fontWeight: 600, fontSize: 14 }}>
-                {e.name}
-                {e.is_owner && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}> · Owner</span>}
-                {e.is_admin && !e.is_owner && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}> · Admin</span>}
-                {!e.active && <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 400 }}> · Inactive</span>}
-              </span>
+              {editingNameId === e.id ? (
+                <div style={{ display: "flex", gap: 6, flex: 1, minWidth: 180 }}>
+                  <input
+                    type="text"
+                    value={editNameText}
+                    onChange={(ev) => setEditNameText(ev.target.value)}
+                    style={{ ...inputStyle(), flex: 1 }}
+                    autoFocus
+                  />
+                  <button
+                    className="btn"
+                    style={{ padding: "6px 10px", width: "auto" }}
+                    disabled={busyId === e.id || !editNameText.trim()}
+                    onClick={() => saveName(e.id)}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingNameId(null)}
+                    style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--border-strong)", background: "white" }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <span style={{ fontWeight: 600, fontSize: 14 }}>
+                  {e.name}
+                  {e.is_owner && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}> · Owner</span>}
+                  {e.is_admin && !e.is_owner && <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 400 }}> · Admin</span>}
+                  {!e.active && <span style={{ fontSize: 11, color: "var(--danger)", fontWeight: 400 }}> · Inactive</span>}
+                  <button
+                    onClick={() => {
+                      setEditingNameId(e.id);
+                      setEditNameText(e.name);
+                    }}
+                    style={{ marginLeft: 6, fontSize: 11, color: "var(--muted)", textDecoration: "underline", padding: 0 }}
+                  >
+                    Edit
+                  </button>
+                </span>
+              )}
               <select
                 value={e.role}
                 disabled={busyId === e.id || e.is_owner}

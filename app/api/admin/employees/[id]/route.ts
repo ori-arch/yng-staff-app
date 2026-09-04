@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Admins only." }, { status: 403 });
   }
 
-  const { role, active, isAdmin } = await req.json();
+  const { role, active, isAdmin, name } = await req.json();
 
   const supabase = supabaseAdmin();
   const { data: target, error: fetchError } = await supabase
@@ -30,6 +30,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!target) return NextResponse.json({ error: "Employee not found." }, { status: 404 });
 
   const updates: Record<string, unknown> = {};
+
+  if (name !== undefined) {
+    if (typeof name !== "string" || !name.trim()) {
+      return NextResponse.json({ error: "Name can't be blank." }, { status: 400 });
+    }
+    updates.name = name.trim();
+  }
 
   if (role !== undefined) {
     if (!["front_desk", "aesthetician", "manager"].includes(role)) {

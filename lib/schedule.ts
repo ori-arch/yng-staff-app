@@ -63,7 +63,7 @@ export async function getSchedule(
 
   let patternsQuery = supabase
     .from("shift_patterns")
-    .select("id, employee_id, weekday, start_time, end_time, note, room_id, employees!shift_patterns_employee_id_fkey(name), rooms(name)")
+    .select("id, employee_id, weekday, start_time, end_time, note, room_id, created_at, employees!shift_patterns_employee_id_fkey(name), rooms(name)")
     .eq("active", true);
   if (employeeId) patternsQuery = patternsQuery.eq("employee_id", employeeId);
   const { data: patterns, error: patternsError } = await patternsQuery;
@@ -106,6 +106,12 @@ export async function getSchedule(
     const weekday = toUtcDate(date).getUTCDay();
     for (const p of patterns ?? []) {
       if (p.weekday !== weekday) continue;
+      // A recurring pattern only applies from the day it was actually set
+      // up -- otherwise creating one today would retroactively invent
+      // shifts (and false "missed compliance") on every matching weekday
+      // going back in time, before the pattern ever existed.
+      const effectiveFrom = p.created_at ? String(p.created_at).slice(0, 10) : null;
+      if (effectiveFrom && date < effectiveFrom) continue;
       const k = key(p.employee_id, date);
       const arr = byEmployeeDate.get(k) ?? [];
       arr.push({
