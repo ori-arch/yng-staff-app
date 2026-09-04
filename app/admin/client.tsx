@@ -238,29 +238,38 @@ function EmployeesTab({
     <>
       <div className="card">
         <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0 }}>Add employee</p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <input
-            type="text"
-            placeholder="First name"
-            value={newFirstName}
-            onChange={(e) => setNewFirstName(e.target.value)}
-            style={{ ...inputStyle(), flex: 1, minWidth: 100 }}
-          />
-          <input
-            type="text"
-            placeholder="Last name"
-            value={newLastName}
-            onChange={(e) => setNewLastName(e.target.value)}
-            style={{ ...inputStyle(), flex: 1, minWidth: 100 }}
-          />
-          <select value={newRole} onChange={(e) => setNewRole(e.target.value)} style={{ ...inputStyle(), flex: 1 }}>
-            <option value="front_desk">Front Desk</option>
-            <option value="aesthetician">Aesthetician</option>
-            <option value="manager">Manager</option>
-          </select>
-          <button className="btn" disabled={!newFirstName.trim() || !newLastName.trim() || adding} onClick={addEmployee}>
-            {adding ? "Adding…" : "Add"}
-          </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="text"
+              placeholder="First name"
+              value={newFirstName}
+              onChange={(e) => setNewFirstName(e.target.value)}
+              style={{ ...inputStyle(), flex: 1, minWidth: 0 }}
+            />
+            <input
+              type="text"
+              placeholder="Last name"
+              value={newLastName}
+              onChange={(e) => setNewLastName(e.target.value)}
+              style={{ ...inputStyle(), flex: 1, minWidth: 0 }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select value={newRole} onChange={(e) => setNewRole(e.target.value)} style={{ ...inputStyle(), flex: 1, minWidth: 0 }}>
+              <option value="front_desk">Front Desk</option>
+              <option value="aesthetician">Aesthetician</option>
+              <option value="manager">Manager</option>
+            </select>
+            <button
+              className="btn"
+              style={{ width: "auto", padding: "0 20px" }}
+              disabled={!newFirstName.trim() || !newLastName.trim() || adding}
+              onClick={addEmployee}
+            >
+              {adding ? "Adding…" : "Add"}
+            </button>
+          </div>
         </div>
         <p style={{ fontSize: 11.5, color: "var(--muted)", margin: "8px 0 0" }}>
           New employees start with no PIN — they'll set one themselves the first time they tap their name and hit
@@ -308,7 +317,8 @@ function EmployeesTab({
                       setEditingNameId(e.id);
                       setEditNameText(e.name);
                     }}
-                    style={{ marginLeft: 6, fontSize: 11, color: "var(--muted)", textDecoration: "underline", padding: 0 }}
+                    className="link-inline"
+                    style={{ marginLeft: 4 }}
                   >
                     Edit
                   </button>
@@ -367,7 +377,7 @@ function EmployeesTab({
                     setClearConfirmText("");
                     setClearError(null);
                   }}
-                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--danger)", background: "white", color: "var(--danger)" }}
+                  className="btn xs danger"
                 >
                   Clear all data
                 </button>

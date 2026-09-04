@@ -162,10 +162,7 @@ export default function Bugs({ isOwner }: { isOwner: boolean }) {
           {photoPreview ? (
             <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
               <img src={photoPreview} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8 }} />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{ fontSize: 13, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "white" }}
-              >
+              <button className="btn xs" onClick={() => fileInputRef.current?.click()}>
                 Choose a different one
               </button>
             </div>
@@ -253,23 +250,20 @@ export default function Bugs({ isOwner }: { isOwner: boolean }) {
                       >
                         {busyId === r.id ? "Saving…" : "Confirm"}
                       </button>
-                      <button onClick={() => { setFixingId(null); setFixNote(""); }} style={{ fontSize: 13 }}>
+                      <button className="btn xs" onClick={() => { setFixingId(null); setFixNote(""); }}>
                         Cancel
                       </button>
                     </div>
                   ) : (
-                    <button
-                      className="btn"
-                      style={{ width: "auto", padding: "4px 12px", fontSize: 12.5, marginTop: 8 }}
-                      onClick={() => setFixingId(r.id)}
-                    >
+                    <button className="btn xs" style={{ marginTop: 8 }} onClick={() => setFixingId(r.id)}>
                       Mark as fixed
                     </button>
                   )
                 )}
                 {isOwner && r.status === "fixed" && (
                   <button
-                    style={{ fontSize: 12, color: "var(--muted)", textDecoration: "underline", padding: 0, marginTop: 6 }}
+                    className="link-inline"
+                    style={{ marginTop: 6 }}
                     disabled={busyId === r.id}
                     onClick={() => reopen(r.id)}
                   >

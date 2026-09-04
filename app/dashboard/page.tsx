@@ -32,10 +32,18 @@ const TILES: Record<string, Tile> = {
 };
 
 function TileGrid({ tiles }: { tiles: Tile[] }) {
+  // An odd tile out in a 2-column grid leaves a lopsided half-empty row --
+  // let it span the full width instead of dangling next to blank space.
+  const isOdd = tiles.length % 2 === 1;
   return (
     <div className="grid">
-      {tiles.map((t) => (
-        <a key={t.href + t.label} href={t.href} className={`tile${t.gold ? " gold-tile" : ""}`}>
+      {tiles.map((t, i) => (
+        <a
+          key={t.href + t.label}
+          href={t.href}
+          className={`tile${t.gold ? " gold-tile" : ""}`}
+          style={isOdd && i === tiles.length - 1 ? { gridColumn: "1 / -1" } : undefined}
+        >
           {t.label}
           <span className="sub">{t.sub}</span>
         </a>

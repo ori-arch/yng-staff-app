@@ -299,34 +299,16 @@ export default function ComplianceDashboard() {
                             seg.reminded ? (
                               <span style={{ fontSize: 11, color: "var(--muted)" }}>Reminder sent</span>
                             ) : (
-                              <button
-                                onClick={() => sendReminder(row.employeeId, seg.segment)}
-                                disabled={reminding === key}
-                                style={{
-                                  fontSize: 11.5,
-                                  padding: "4px 8px",
-                                  borderRadius: 6,
-                                  border: "1px solid var(--border-strong)",
-                                  color: "var(--ink)",
-                                  background: "white",
-                                }}
-                              >
+                              <button className="btn xs" onClick={() => sendReminder(row.employeeId, seg.segment)} disabled={reminding === key}>
                                 {reminding === key ? "Sending…" : "Send Reminder"}
                               </button>
                             )
                           )}
                           {seg.status === "missed" && !seg.warning && (
                             <button
+                              className="btn xs danger"
                               onClick={() => generateWarning(row.employeeId, row.name, seg.segment)}
                               disabled={issuing === key}
-                              style={{
-                                fontSize: 11.5,
-                                padding: "4px 8px",
-                                borderRadius: 6,
-                                border: "1px solid var(--danger)",
-                                color: "var(--danger)",
-                                background: "white",
-                              }}
                             >
                               {issuing === key ? "Generating…" : "Generate Warning"}
                             </button>

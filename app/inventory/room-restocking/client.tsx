@@ -373,20 +373,11 @@ export default function RoomRestockingPage({ isManager }: { isManager: boolean }
                 {isManager && l.noReplacement && (
                   <div style={{ marginTop: 6 }}>
                     {!l.ordered ? (
-                      <button
-                        className="btn"
-                        style={{ width: "auto", padding: "4px 12px", fontSize: 12.5 }}
-                        disabled={busyId === l.id}
-                        onClick={() => setOrdered(l.id, "mark_ordered")}
-                      >
+                      <button className="btn xs" disabled={busyId === l.id} onClick={() => setOrdered(l.id, "mark_ordered")}>
                         {busyId === l.id ? "Saving…" : "Mark as ordered"}
                       </button>
                     ) : (
-                      <button
-                        style={{ fontSize: 12, color: "var(--muted)", textDecoration: "underline", padding: 0 }}
-                        disabled={busyId === l.id}
-                        onClick={() => setOrdered(l.id, "reopen")}
-                      >
+                      <button className="link-inline" disabled={busyId === l.id} onClick={() => setOrdered(l.id, "reopen")}>
                         {busyId === l.id ? "Saving…" : "Reopen"}
                       </button>
                     )}
