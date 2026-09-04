@@ -22,7 +22,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("room_restocking_logs")
     .select(
-      "id, item_type, specific_item, remaining_quantity, empty_bottle_photo_url, new_item_photo_url, no_replacement, created_at, employees(name), room_ran_out:room_ran_out_id(name), room_restocked:room_restocked_id(name)"
+      "id, item_type, specific_item, remaining_quantity, empty_bottle_photo_url, new_item_photo_url, no_replacement, ordered, created_at, employees(name), room_ran_out:room_ran_out_id(name), room_restocked:room_restocked_id(name)"
     )
     .order("created_at", { ascending: false })
     .limit(30);
@@ -43,6 +43,7 @@ export async function GET() {
       emptyBottlePhotoUrl: l.empty_bottle_photo_url,
       newItemPhotoUrl: l.new_item_photo_url,
       noReplacement: l.no_replacement ?? false,
+      ordered: l.ordered ?? false,
       createdAt: l.created_at,
       employeeName: emp?.name ?? null,
       roomRanOut: ranOut?.name ?? null,

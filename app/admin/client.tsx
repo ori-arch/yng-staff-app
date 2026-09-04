@@ -97,7 +97,8 @@ function EmployeesTab({
 }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState("");
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
   const [newRole, setNewRole] = useState("aesthetician");
   const [adding, setAdding] = useState(false);
   const [resetFor, setResetFor] = useState<string | null>(null);
@@ -105,6 +106,10 @@ function EmployeesTab({
   const [resetError, setResetError] = useState<string | null>(null);
   const [justSet, setJustSet] = useState<{ id: string; pin: string; name: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [clearingFor, setClearingFor] = useState<string | null>(null);
+  const [clearConfirmText, setClearConfirmText] = useState("");
+  const [clearError, setClearError] = useState<string | null>(null);
+  const [justCleared, setJustCleared] = useState<string | null>(null);
 
   function load() {
     fetch("/api/admin/employees")
@@ -122,18 +127,19 @@ function EmployeesTab({
   }, []);
 
   async function addEmployee() {
-    if (!newName.trim()) return;
+    if (!newFirstName.trim() || !newLastName.trim()) return;
     setAdding(true);
     setError(null);
     try {
       const res = await fetch("/api/admin/employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim(), role: newRole }),
+        body: JSON.stringify({ name: `${newFirstName.trim()} ${newLastName.trim()}`, role: newRole }),
       });
       const data = await res.json();
       if (res.ok) {
-        setNewName("");
+        setNewFirstName("");
+        setNewLastName("");
         load();
       } else setError(data.error || "Could not add employee.");
     } finally {
@@ -182,6 +188,28 @@ function EmployeesTab({
     }
   }
 
+  async function submitClear(id: string, name: string) {
+    setBusyId(id);
+    setClearError(null);
+    try {
+      const res = await fetch(`/api/admin/employees/${id}/clear-data`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmText: clearConfirmText }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setClearingFor(null);
+        setClearConfirmText("");
+        setJustCleared(name);
+        setTimeout(() => setJustCleared(null), 4000);
+        load();
+      } else setClearError(data.error || "Could not clear this employee's data.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   if (loading) return <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>;
 
   return (
@@ -191,17 +219,24 @@ function EmployeesTab({
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <input
             type="text"
-            placeholder="Name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            style={{ ...inputStyle(), flex: 2, minWidth: 120 }}
+            placeholder="First name"
+            value={newFirstName}
+            onChange={(e) => setNewFirstName(e.target.value)}
+            style={{ ...inputStyle(), flex: 1, minWidth: 100 }}
+          />
+          <input
+            type="text"
+            placeholder="Last name"
+            value={newLastName}
+            onChange={(e) => setNewLastName(e.target.value)}
+            style={{ ...inputStyle(), flex: 1, minWidth: 100 }}
           />
           <select value={newRole} onChange={(e) => setNewRole(e.target.value)} style={{ ...inputStyle(), flex: 1 }}>
             <option value="front_desk">Front Desk</option>
             <option value="aesthetician">Aesthetician</option>
             <option value="manager">Manager</option>
           </select>
-          <button className="btn" disabled={!newName.trim() || adding} onClick={addEmployee}>
+          <button className="btn" disabled={!newFirstName.trim() || !newLastName.trim() || adding} onClick={addEmployee}>
             {adding ? "Adding…" : "Add"}
           </button>
         </div>
@@ -267,7 +302,60 @@ function EmployeesTab({
                   Set PIN
                 </button>
               )}
+              {isOwner && !e.is_owner && (
+                <button
+                  onClick={() => {
+                    const opening = clearingFor !== e.id;
+                    setClearingFor(opening ? e.id : null);
+                    setClearConfirmText("");
+                    setClearError(null);
+                  }}
+                  style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1px solid var(--danger)", background: "white", color: "var(--danger)" }}
+                >
+                  Clear all data
+                </button>
+              )}
             </div>
+
+            {justCleared === e.name && (
+              <div className="card gold" style={{ marginTop: 10, padding: 12 }}>
+                <p style={{ margin: 0, fontSize: 13.5 }}>✓ All history cleared for {e.name}. Her name, role and PIN are unchanged.</p>
+              </div>
+            )}
+
+            {clearingFor === e.id && (
+              <div className="card tinted" style={{ marginTop: 10, padding: 12, borderColor: "var(--danger)" }}>
+                <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 600, color: "var(--danger)" }}>
+                  This permanently deletes ALL of {e.name}'s history
+                </p>
+                <p style={{ margin: "0 0 8px", fontSize: 12, color: "var(--muted)" }}>
+                  Shifts, checklists, violations, time off, shift swaps, leaderboard entries, room issue reports,
+                  restocking logs, and notifications — everything. This cannot be undone. Her name, role, and PIN
+                  stay the same, so she can keep logging in.
+                </p>
+                <label style={{ fontSize: 12, fontWeight: 600, display: "block", marginBottom: 4 }}>
+                  Type <strong>{e.name}</strong> to confirm
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={clearConfirmText}
+                    onChange={(ev) => setClearConfirmText(ev.target.value)}
+                    style={{ ...inputStyle(), flex: 1 }}
+                  />
+                  <button
+                    className="btn"
+                    style={{ width: "auto", padding: "0 16px", background: "var(--danger)" }}
+                    disabled={busyId === e.id || clearConfirmText.trim().toLowerCase() !== e.name.trim().toLowerCase()}
+                    onClick={() => submitClear(e.id, e.name)}
+                  >
+                    {busyId === e.id ? "Clearing…" : "Permanently clear"}
+                  </button>
+                </div>
+                {clearError && <p className="error-text" style={{ margin: "8px 0 0" }}>{clearError}</p>}
+              </div>
+            )}
 
             {resetFor === e.id && (
               <div className="card tinted" style={{ marginTop: 10, padding: 12 }}>
@@ -513,7 +601,9 @@ function ChecklistsTab({ setError }: { setError: (e: string | null) => void }) {
   const [newText, setNewText] = useState<Record<string, string>>({});
   const [newPhoto, setNewPhoto] = useState<Record<string, boolean>>({});
   const [adding, setAdding] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<Set<string>>(
+    new Set(GROUPS.map((g) => `${g.role}:${g.segment}`))
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
 

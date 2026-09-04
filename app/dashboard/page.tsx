@@ -15,8 +15,6 @@ type Tile = { href: string; label: string; sub: string; gold?: boolean };
 const TILES: Record<string, Tile> = {
   equipment: { href: "/equipment-log", label: "Equipment Log", sub: "Log a device use" },
   roomRestocking: { href: "/inventory/room-restocking", label: "Room Restocking", sub: "Log a pulled item" },
-  restockRunner: { href: "/inventory/restock-runner", label: "Restock Runner", sub: "Cabinet & loft check" },
-  loftCleaning: { href: "/inventory/loft-cleaning", label: "Loft Cleaning", sub: "Periodic duty" },
   protocols: { href: "/protocols", label: "Protocols & Tutorials", sub: "Reference library" },
   messages: { href: "/messages", label: "Messages", sub: "Team & alerts" },
   admin: { href: "/admin", label: "Admin Panel", sub: "Team, rooms, checklists" },
@@ -63,18 +61,27 @@ function todayLabel() {
 
 async function getManagerStats() {
   const supabase = supabaseAdmin();
-  const [{ count: pendingTimeOff }, { count: pendingSwaps }, { count: openWarnings }] = await Promise.all([
-    supabase.from("time_off_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase
-      .from("shift_swap_requests")
-      .select("id", { count: "exact", head: true })
-      .in("status", ["pending_coworker", "pending_owner"]),
-    supabase.from("warning_notices").select("id", { count: "exact", head: true }).eq("status", "issued"),
-  ]);
+  const [{ count: pendingTimeOff }, { count: pendingSwaps }, { count: openWarnings }, { count: openRoomIssues }, { count: itemsToOrder }] =
+    await Promise.all([
+      supabase.from("time_off_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase
+        .from("shift_swap_requests")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["pending_coworker", "pending_owner"]),
+      supabase.from("warning_notices").select("id", { count: "exact", head: true }).eq("status", "issued"),
+      supabase.from("room_issue_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
+      supabase
+        .from("room_restocking_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("no_replacement", true)
+        .eq("ordered", false),
+    ]);
   return {
     pendingTimeOff: pendingTimeOff ?? 0,
     pendingSwaps: pendingSwaps ?? 0,
     openWarnings: openWarnings ?? 0,
+    openRoomIssues: openRoomIssues ?? 0,
+    itemsToOrder: itemsToOrder ?? 0,
   };
 }
 
@@ -239,7 +246,7 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
       )}
 
       <div className="section-label">Quick log</div>
-      <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment, TILES.roomIssues] : [TILES.equipment, TILES.restockRunner, TILES.roomIssues]} />
+      <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment, TILES.roomIssues] : [TILES.equipment, TILES.roomIssues]} />
 
       <div className="section-label">Team</div>
       <TileGrid tiles={[TILES.myShifts, TILES.messages]} />
@@ -272,6 +279,16 @@ async function ManagerDashboard() {
         <a href="/warnings" className={`stat-card${stats.openWarnings > 0 ? " attention" : ""}`}>
           <span className="num">{stats.openWarnings}</span>
           <span className="label">Open warnings</span>
+        </a>
+      </div>
+      <div className="stat-row" style={{ gridTemplateColumns: "repeat(2, 1fr)", marginTop: 8 }}>
+        <a href="/room-issues" className={`stat-card${stats.openRoomIssues > 0 ? " attention" : ""}`}>
+          <span className="num">{stats.openRoomIssues}</span>
+          <span className="label">Open room issues</span>
+        </a>
+        <a href="/inventory/room-restocking" className={`stat-card${stats.itemsToOrder > 0 ? " attention" : ""}`}>
+          <span className="num">{stats.itemsToOrder}</span>
+          <span className="label">Items to order</span>
         </a>
       </div>
 
