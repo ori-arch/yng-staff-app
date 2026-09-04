@@ -68,7 +68,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         violationTypeName: type?.name ?? null,
         levelLabel: type?.level_label ?? null,
         typeDescription: type?.description ?? null,
-        recommendedAction: type?.recommended_action ?? null,
+        // Internal manager guidance -- never shown to the employee who received the warning.
+        recommendedAction: mgr ? type?.recommended_action ?? null : null,
         status: warning.status,
         quarterLabel: warning.quarter_label,
         track: warning.track,

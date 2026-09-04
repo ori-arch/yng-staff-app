@@ -28,7 +28,7 @@ const TRACK_META: Record<string, { emoji: string; bg: string; fg: string }> = {
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso + "T00:00:00Z").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 export default function WarningsList({ isManager }: { isManager: boolean }) {
@@ -142,6 +142,7 @@ export default function WarningsList({ isManager }: { isManager: boolean }) {
                 onChange={(e) => setViolationDate(e.target.value)}
                 style={{ padding: "11px 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 14.5 }}
               />
+              <p style={{ fontSize: 12, color: "var(--muted)", margin: "-4px 0 0" }}>{fmtDate(violationDate)}</p>
               <input
                 placeholder="Additional detail (optional)"
                 value={note}

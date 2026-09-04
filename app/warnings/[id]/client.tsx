@@ -32,7 +32,7 @@ const TRACK_META: Record<string, { emoji: string; bg: string; fg: string; label:
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso + "T00:00:00Z").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 export default function WarningDetail({ id, isManager }: { id: string; isManager: boolean }) {

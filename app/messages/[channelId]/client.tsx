@@ -13,7 +13,7 @@ type Message = {
 };
 
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
 export default function ThreadView({ channelId }: { channelId: string }) {

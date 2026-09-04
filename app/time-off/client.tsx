@@ -18,7 +18,7 @@ type AllRequest = MyRequest & { employeeId: string; employeeName: string };
 type Balance = { employeeId: string; name: string; role: string; balance: number };
 
 function fmtDate(iso: string) {
-  return new Date(iso + "T00:00:00Z").toLocaleDateString([], { month: "short", day: "numeric", timeZone: "UTC" });
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -61,6 +61,10 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [hours, setHours] = useState("");
+  const [hoursTouched, setHoursTouched] = useState(false);
+  const [scheduledHours, setScheduledHours] = useState<number | null>(null);
+  const [scheduledShiftCount, setScheduledShiftCount] = useState<number | null>(null);
+  const [loadingScheduled, setLoadingScheduled] = useState(false);
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -94,6 +98,28 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Whenever both dates are picked, look up how many hours she's actually
+  // scheduled to work in that range so she can see the real impact instead
+  // of guessing a number by hand.
+  useEffect(() => {
+    if (!startDate || !endDate || endDate < startDate) {
+      setScheduledHours(null);
+      setScheduledShiftCount(null);
+      return;
+    }
+    setLoadingScheduled(true);
+    fetch(`/api/time-off/scheduled-hours?startDate=${startDate}&endDate=${endDate}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) return;
+        setScheduledHours(data.hours ?? 0);
+        setScheduledShiftCount(data.shiftCount ?? 0);
+        if (!hoursTouched) setHours(String(data.hours ?? 0));
+      })
+      .finally(() => setLoadingScheduled(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startDate, endDate]);
+
   async function submitRequest() {
     setSubmitting(true);
     setError(null);
@@ -108,6 +134,9 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
         setStartDate("");
         setEndDate("");
         setHours("");
+        setHoursTouched(false);
+        setScheduledHours(null);
+        setScheduledShiftCount(null);
         setReason("");
         load();
       } else {
@@ -184,15 +213,43 @@ export default function TimeOff({ isManager }: { isManager: boolean }) {
                 style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
               />
             </div>
+
+            {startDate && endDate && endDate >= startDate && (
+              <p style={{ margin: "8px 0 0", fontSize: 12.5, color: "var(--muted)" }}>
+                {loadingScheduled
+                  ? "Checking your schedule…"
+                  : scheduledHours !== null
+                  ? scheduledShiftCount
+                    ? `You're scheduled for ${scheduledHours} hour${scheduledHours === 1 ? "" : "s"} across ${scheduledShiftCount} shift${scheduledShiftCount === 1 ? "" : "s"} in this range.`
+                    : "You have no shifts scheduled in this range."
+                  : null}
+              </p>
+            )}
+
             <input
               type="number"
               min={0}
               step="0.5"
               placeholder="Hours requested"
               value={hours}
-              onChange={(e) => setHours(e.target.value)}
+              onChange={(e) => {
+                setHoursTouched(true);
+                setHours(e.target.value);
+              }}
               style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)", marginTop: 8 }}
             />
+            {scheduledHours !== null && hoursTouched && Number(hours) !== scheduledHours && (
+              <button
+                type="button"
+                onClick={() => {
+                  setHours(String(scheduledHours));
+                  setHoursTouched(false);
+                }}
+                style={{ fontSize: 12, color: "var(--muted)", textDecoration: "underline", marginTop: 4, background: "none", border: "none", padding: 0 }}
+              >
+                Use scheduled hours ({scheduledHours})
+              </button>
+            )}
             <input
               type="text"
               placeholder="Reason (optional)"

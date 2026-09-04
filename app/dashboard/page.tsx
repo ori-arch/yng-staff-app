@@ -17,7 +17,7 @@ const TILES: Record<string, Tile> = {
   roomRestocking: { href: "/inventory/room-restocking", label: "Room Restocking", sub: "Log a pulled item" },
   restockRunner: { href: "/inventory/restock-runner", label: "Restock Runner", sub: "Cabinet & loft check" },
   loftCleaning: { href: "/inventory/loft-cleaning", label: "Loft Cleaning", sub: "Periodic duty" },
-  protocols: { href: "/protocols", label: "Protocols", sub: "Treatment reference" },
+  protocols: { href: "/protocols", label: "Protocols & Tutorials", sub: "Reference library" },
   messages: { href: "/messages", label: "Messages", sub: "Team & alerts" },
   admin: { href: "/admin", label: "Admin Panel", sub: "Team, rooms, checklists" },
   compliance: { href: "/compliance", label: "Compliance", sub: "Who did what today" },
@@ -242,7 +242,10 @@ async function StaffDashboard({ employeeId, role }: { employeeId: string; role: 
       <TileGrid tiles={role === "aesthetician" ? [TILES.roomRestocking, TILES.equipment, TILES.roomIssues] : [TILES.equipment, TILES.restockRunner, TILES.roomIssues]} />
 
       <div className="section-label">Team</div>
-      <TileGrid tiles={[TILES.myShifts, TILES.messages, TILES.protocols]} />
+      <TileGrid tiles={[TILES.myShifts, TILES.messages]} />
+
+      <div className="section-label">Knowledge base</div>
+      <TileGrid tiles={[TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Time off, shift swaps, facility duties and more are in the menu ☰
@@ -289,7 +292,10 @@ async function ManagerDashboard() {
       <TileGrid tiles={[TILES.broadcast, TILES.messages]} />
 
       <div className="section-label">Manage</div>
-      <TileGrid tiles={[TILES.schedule, TILES.admin, TILES.leaderboardManage, TILES.roomIssuesManage, TILES.photos, TILES.protocols]} />
+      <TileGrid tiles={[TILES.schedule, TILES.admin, TILES.leaderboardManage, TILES.roomIssuesManage, TILES.photos]} />
+
+      <div className="section-label">Knowledge base</div>
+      <TileGrid tiles={[TILES.protocols]} />
 
       <p style={{ marginTop: 26, fontSize: 13, color: "var(--muted)", textAlign: "center" }}>
         Equipment and inventory logs, time off and more are in the menu ☰

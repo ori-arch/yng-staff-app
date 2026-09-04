@@ -21,6 +21,10 @@ const SEGMENT_SUB: Record<string, string> = {
   close: "Tap each task as you finish it. Sign at the end.",
 };
 
+function fmtDate(iso: string) {
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
 function CameraIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -45,6 +49,8 @@ export default function ChecklistSegmentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [cameraForItem, setCameraForItem] = useState<Item | null>(null);
+  const [forDate, setForDate] = useState<string | null>(null);
+  const [isLate, setIsLate] = useState(false);
 
   function load(again = false) {
     setLoading(true);
@@ -57,6 +63,8 @@ export default function ChecklistSegmentPage() {
           setAlreadyDone(null);
           setSubmissionId(data.submissionId);
           setItems(data.items);
+          setForDate(data.forDate ?? null);
+          setIsLate(Boolean(data.isLate));
         }
       })
       .catch(() => setError("Could not load this checklist. Check your connection."))
@@ -107,8 +115,9 @@ export default function ChecklistSegmentPage() {
   const allComplete = items.length > 0 && remaining === 0;
 
   function pressDigit(d: string) {
+    if (pin.length >= 4) return;
     setSignError(null);
-    setPin((p) => (p + d).slice(0, 6));
+    setPin((p) => p + d);
   }
 
   async function confirmSignature() {
@@ -146,7 +155,7 @@ export default function ChecklistSegmentPage() {
 
   if (done || alreadyDone) {
     const when = alreadyDone
-      ? new Date(alreadyDone).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+      ? new Date(alreadyDone).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
       : null;
     return (
       <div className="container">
@@ -171,6 +180,22 @@ export default function ChecklistSegmentPage() {
     <div className="container">
       <h1 className="page-title">{title}</h1>
       <p className="page-sub">{SEGMENT_SUB[segment] ?? ""}</p>
+
+      {isLate && forDate && (
+        <p
+          style={{
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: "var(--danger)",
+            background: "var(--danger-soft)",
+            borderRadius: 8,
+            padding: "6px 10px",
+            marginBottom: 4,
+          }}
+        >
+          This is for your {fmtDate(forDate)} shift — it's being submitted late.
+        </p>
+      )}
 
       <div className="progress">
         <div className="bar">

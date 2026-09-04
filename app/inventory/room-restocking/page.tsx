@@ -12,6 +12,7 @@ type Log = {
   remainingQuantity: string | null;
   emptyBottlePhotoUrl: string | null;
   newItemPhotoUrl: string | null;
+  noReplacement: boolean;
   createdAt: string;
   employeeName: string | null;
   roomRanOut: string | null;
@@ -37,6 +38,7 @@ export default function RoomRestockingPage() {
   const [sharpieInitials, setSharpieInitials] = useState(false);
   const [emptyBottlePhoto, setEmptyBottlePhoto] = useState<File | null>(null);
   const [emptyBottlePreview, setEmptyBottlePreview] = useState<string | null>(null);
+  const [noReplacement, setNoReplacement] = useState(false);
   const [newItemPhoto, setNewItemPhoto] = useState<File | null>(null);
   const [newItemPreview, setNewItemPreview] = useState<string | null>(null);
 
@@ -74,6 +76,7 @@ export default function RoomRestockingPage() {
     setSharpieInitials(false);
     setEmptyBottlePhoto(null);
     setEmptyBottlePreview(null);
+    setNoReplacement(false);
     setNewItemPhoto(null);
     setNewItemPreview(null);
     setSigning(false);
@@ -83,7 +86,7 @@ export default function RoomRestockingPage() {
   function tryOpenSign() {
     setError(null);
     if (!specificItem.trim()) {
-      setError("Enter which item was restocked.");
+      setError("Enter which item was restocked (or which item is missing).");
       return;
     }
     if (!sharpieRoom || !sharpieDate || !sharpieInitials) {
@@ -94,16 +97,17 @@ export default function RoomRestockingPage() {
       setError("A photo of the empty bottle is required.");
       return;
     }
-    if (!newItemPhoto) {
-      setError("A photo of the replacement item is required.");
+    if (!noReplacement && !newItemPhoto) {
+      setError("A photo of the replacement item is required (or flag that there's no replacement).");
       return;
     }
     setSigning(true);
   }
 
   function pressDigit(d: string) {
+    if (pin.length >= 4) return;
     setError(null);
-    setPin((p) => (p + d).slice(0, 6));
+    setPin((p) => p + d);
   }
 
   async function submit() {
@@ -119,6 +123,7 @@ export default function RoomRestockingPage() {
       form.set("sharpieRoom", String(sharpieRoom));
       form.set("sharpieDate", String(sharpieDate));
       form.set("sharpieInitials", String(sharpieInitials));
+      form.set("noReplacement", String(noReplacement));
       form.set("pin", pin);
       if (emptyBottlePhoto) form.set("emptyBottlePhoto", emptyBottlePhoto);
       if (newItemPhoto) form.set("newItemPhoto", newItemPhoto);
@@ -226,11 +231,41 @@ export default function RoomRestockingPage() {
             preview={emptyBottlePreview}
             onCapture={(f) => { setEmptyBottlePhoto(f); setEmptyBottlePreview(URL.createObjectURL(f)); }}
           />
-          <PhotoCaptureField
-            label="Photo of the replacement item"
-            preview={newItemPreview}
-            onCapture={(f) => { setNewItemPhoto(f); setNewItemPreview(URL.createObjectURL(f)); }}
-          />
+
+          <button
+            onClick={() => {
+              setNoReplacement((v) => !v);
+              if (!noReplacement) {
+                setNewItemPhoto(null);
+                setNewItemPreview(null);
+              }
+            }}
+            style={{ display: "flex", alignItems: "center", gap: 10, textAlign: "left", padding: 8, borderRadius: 8, border: "1px solid #eee" }}
+          >
+            <span
+              style={{
+                width: 18,
+                height: 18,
+                minWidth: 18,
+                borderRadius: 5,
+                border: "2px solid var(--danger)",
+                background: noReplacement ? "var(--danger)" : "transparent",
+              }}
+            />
+            <span style={{ fontSize: 14 }}>No replacement on hand — flag this for a manager to order</span>
+          </button>
+
+          {!noReplacement ? (
+            <PhotoCaptureField
+              label="Photo of the replacement item"
+              preview={newItemPreview}
+              onCapture={(f) => { setNewItemPhoto(f); setNewItemPreview(URL.createObjectURL(f)); }}
+            />
+          ) : (
+            <p style={{ fontSize: 12.5, color: "var(--muted)", margin: 0 }}>
+              Managers will be notified that <strong>{specificItem.trim() || "this item"}</strong> needs to be ordered.
+            </p>
+          )}
 
           {error && <p className="error-text">{error}</p>}
           {justSubmitted && <p style={{ color: "var(--success)", fontSize: 13.5, margin: 0 }}>Logged ✓</p>}
@@ -277,7 +312,24 @@ export default function RoomRestockingPage() {
               )}
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{l.specificItem}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>
+                    {l.specificItem}
+                    {l.noReplacement && (
+                      <span
+                        style={{
+                          marginLeft: 6,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: "var(--danger)",
+                          background: "var(--danger-soft)",
+                          borderRadius: 999,
+                          padding: "1px 8px",
+                        }}
+                      >
+                        Needs ordering
+                      </span>
+                    )}
+                  </span>
                   <span style={{ fontSize: 12, color: "var(--muted)" }}>{fmtDateTime(l.createdAt)}</span>
                 </div>
                 <span style={{ fontSize: 12.5, color: "var(--muted)" }}>

@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
   const employeeIds = (employees ?? []).map((e) => e.id);
   const { data: submissions, error: subError } = await supabase
     .from("checklist_submissions")
-    .select("employee_id, segment, completed_at")
+    .select("employee_id, segment, completed_at, submission_date")
     .eq("submission_date", date)
     .in("employee_id", employeeIds.length ? employeeIds : ["00000000-0000-0000-0000-000000000000"]);
   if (subError) return NextResponse.json({ error: subError.message }, { status: 500 });
@@ -86,12 +86,16 @@ export async function GET(req: NextRequest) {
       // approved time off) never had a checklist to do -- don't flag them
       // as having missed one just because no submission exists.
       const status = done ? "done" : !scheduled ? "not_scheduled" : isPastDate ? "missed" : "pending";
+      // Filled out after the day it was actually for (e.g. this row is for
+      // Sep 3, but she didn't sign off until Sep 4).
+      const late = done && sub?.completed_at ? sub.completed_at.slice(0, 10) > date : false;
       const existingWarning = (warnings ?? []).find(
         (w) => w.employee_id === emp.id && w.source_table === `checklist:${segment}`
       );
       return {
         segment,
         status,
+        late,
         completedAt: sub?.completed_at ?? null,
         warning: existingWarning ? { id: existingWarning.id, status: existingWarning.status } : null,
       };

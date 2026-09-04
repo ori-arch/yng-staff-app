@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 type SegmentStatus = {
   segment: string;
   status: "done" | "missed" | "pending" | "not_scheduled";
+  late: boolean;
   completedAt: string | null;
   warning: { id: string; status: string } | null;
 };
@@ -19,6 +20,22 @@ type EmployeeRow = {
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function addDays(dateStr: string, delta: number) {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+function fmtDateLong(dateStr: string) {
+  return new Date(dateStr + "T00:00:00Z").toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string; label: string }> = {
@@ -79,12 +96,31 @@ export default function ComplianceDashboard() {
     }
   }
 
+  const isToday = date === todayStr();
+
+  // Missed-something rows first, so the people who need attention aren't buried.
+  const sortedRows = [...rows].sort((a, b) => {
+    const aMissed = a.segments.some((s) => s.status === "missed") ? 0 : 1;
+    const bMissed = b.segments.some((s) => s.status === "missed") ? 0 : 1;
+    if (aMissed !== bMissed) return aMissed - bMissed;
+    return a.name.localeCompare(b.name);
+  });
+  const missedCount = rows.filter((r) => r.segments.some((s) => s.status === "missed")).length;
+
   return (
     <div className="container">
       <h1 className="page-title">Compliance</h1>
       <p className="page-sub">Checklist completion by employee and day.</p>
 
-      <div style={{ margin: "12px 0" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}>
+        <button
+          className="btn ghost sm"
+          onClick={() => setDate((d) => addDays(d, -1))}
+          aria-label="Previous day"
+          style={{ padding: "8px 12px" }}
+        >
+          ‹
+        </button>
         <input
           type="date"
           value={date}
@@ -92,74 +128,111 @@ export default function ComplianceDashboard() {
           onChange={(e) => setDate(e.target.value)}
           style={{ padding: 10, borderRadius: 8, border: "1px solid var(--border-strong)" }}
         />
+        <button
+          className="btn ghost sm"
+          onClick={() => setDate((d) => addDays(d, 1))}
+          disabled={isToday}
+          aria-label="Next day"
+          style={{ padding: "8px 12px" }}
+        >
+          ›
+        </button>
+        {!isToday && (
+          <button className="btn ghost sm" onClick={() => setDate(todayStr())}>
+            Today
+          </button>
+        )}
       </div>
+      <p style={{ fontSize: 13, color: "var(--muted)", marginTop: -6 }}>{fmtDateLong(date)}</p>
 
       {error && <p className="error-text">{error}</p>}
+
+      {!loading && rows.length > 0 && (
+        <p
+          style={{
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: missedCount > 0 ? "var(--danger)" : "var(--success)",
+            background: missedCount > 0 ? "var(--danger-soft)" : "var(--success-soft)",
+            borderRadius: 8,
+            padding: "6px 10px",
+            display: "inline-block",
+          }}
+        >
+          {missedCount > 0 ? `${missedCount} of ${rows.length} missed something` : `All ${rows.length} clear`}
+        </p>
+      )}
 
       {loading ? (
         <p style={{ color: "var(--muted)", fontSize: 14 }}>Loading…</p>
       ) : rows.length === 0 ? (
         <p style={{ color: "var(--muted)", fontSize: 14 }}>No checklist-eligible employees found.</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {rows.map((row) => (
-            <div key={row.employeeId} className="card">
-              <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 8 }}>
-                {row.name} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}>({row.role.replace("_", " ")})</span>
-                {!row.scheduled && (
-                  <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}> · not on the schedule that day</span>
-                )}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {row.segments.map((seg) => {
-                  const style = STATUS_STYLE[seg.status];
-                  const key = `${row.employeeId}:${seg.segment}`;
-                  return (
-                    <div
-                      key={seg.segment}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        padding: "6px 10px",
-                        borderRadius: 8,
-                        background: style.bg,
-                      }}
-                    >
-                      <span style={{ fontSize: 13.5, textTransform: "capitalize" }}>{seg.segment}</span>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 600, color: style.fg }}>{style.label}</span>
-                        {seg.status === "missed" && !seg.warning && (
-                          <button
-                            onClick={() => generateWarning(row.employeeId, row.name, seg.segment)}
-                            disabled={issuing === key}
-                            style={{
-                              fontSize: 11.5,
-                              padding: "4px 8px",
-                              borderRadius: 6,
-                              border: "1px solid var(--danger)",
-                              color: "var(--danger)",
-                              background: "white",
-                            }}
-                          >
-                            {issuing === key ? "Generating…" : "Generate Warning"}
-                          </button>
-                        )}
-                        {seg.warning && (
-                          <a
-                            href={`/warnings/${seg.warning.id}`}
-                            style={{ fontSize: 11.5, color: "var(--muted)", textDecoration: "underline" }}
-                          >
-                            {seg.warning.status === "acknowledged" ? "Warning acknowledged" : "Warning issued"}
-                          </a>
-                        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 10 }}>
+          {sortedRows.map((row) => {
+            const rowHasMissed = row.segments.some((s) => s.status === "missed");
+            return (
+              <div key={row.employeeId} className="card" style={rowHasMissed ? { borderLeft: "4px solid var(--danger)" } : undefined}>
+                <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 8 }}>
+                  {row.name} <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}>({row.role.replace("_", " ")})</span>
+                  {!row.scheduled && (
+                    <span style={{ color: "var(--muted)", fontWeight: 400, fontSize: 12.5 }}> · not on the schedule that day</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {row.segments.map((seg) => {
+                    const style = STATUS_STYLE[seg.status];
+                    const key = `${row.employeeId}:${seg.segment}`;
+                    return (
+                      <div
+                        key={seg.segment}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "6px 10px",
+                          borderRadius: 8,
+                          background: style.bg,
+                        }}
+                      >
+                        <span style={{ fontSize: 13.5, textTransform: "capitalize" }}>{seg.segment}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 12.5, fontWeight: 600, color: style.fg }}>
+                            {style.label}
+                            {seg.late && " (late)"}
+                          </span>
+                          {seg.status === "missed" && !seg.warning && (
+                            <button
+                              onClick={() => generateWarning(row.employeeId, row.name, seg.segment)}
+                              disabled={issuing === key}
+                              style={{
+                                fontSize: 11.5,
+                                padding: "4px 8px",
+                                borderRadius: 6,
+                                border: "1px solid var(--danger)",
+                                color: "var(--danger)",
+                                background: "white",
+                              }}
+                            >
+                              {issuing === key ? "Generating…" : "Generate Warning"}
+                            </button>
+                          )}
+                          {seg.warning && (
+                            <a
+                              href={`/warnings/${seg.warning.id}`}
+                              style={{ fontSize: 11.5, color: "var(--muted)", textDecoration: "underline" }}
+                            >
+                              {seg.warning.status === "acknowledged" ? "Warning acknowledged" : "Warning issued"}
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

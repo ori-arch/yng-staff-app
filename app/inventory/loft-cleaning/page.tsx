@@ -13,7 +13,7 @@ type Log = {
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function YesNo({

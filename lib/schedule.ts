@@ -168,3 +168,17 @@ export async function getSchedule(
 }
 
 export const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** Length of one shift instance in hours (e.g. "09:00"-"17:00" -> 8). */
+export function shiftHours(s: Pick<ShiftInstance, "startTime" | "endTime">): number {
+  const [sh, sm] = s.startTime.split(":").map(Number);
+  const [eh, em] = s.endTime.split(":").map(Number);
+  if ([sh, sm, eh, em].some((n) => Number.isNaN(n))) return 0;
+  const minutes = eh * 60 + em - (sh * 60 + sm);
+  return minutes > 0 ? Math.round((minutes / 60) * 100) / 100 : 0;
+}
+
+/** Total scheduled hours for one employee across every shift in a date range. */
+export function totalScheduledHours(shifts: ShiftInstance[], employeeId: string): number {
+  return shifts.filter((s) => s.employeeId === employeeId).reduce((sum, s) => sum + shiftHours(s), 0);
+}

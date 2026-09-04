@@ -29,7 +29,7 @@ const RESET_LABEL: Record<string, string> = {
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function PolicyView({ mode }: { mode: "view" | "sign" }) {
@@ -61,8 +61,9 @@ export default function PolicyView({ mode }: { mode: "view" | "sign" }) {
   }, []);
 
   function pressDigit(d: string) {
+    if (pin.length >= 4) return;
     setError(null);
-    setPin((p) => (p + d).slice(0, 6));
+    setPin((p) => p + d);
   }
 
   async function submitSign() {

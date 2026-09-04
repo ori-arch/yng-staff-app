@@ -430,7 +430,7 @@ function RoomsTab({ setError }: { setError: (e: string | null) => void }) {
             onChange={(e) => setNewName(e.target.value)}
             style={{ ...inputStyle(), flex: 1 }}
           />
-          <button className="btn" disabled={!newName.trim() || adding} onClick={addRoom}>
+          <button className="btn" style={{ width: "auto", padding: "0 16px" }} disabled={!newName.trim() || adding} onClick={addRoom}>
             {adding ? "Adding…" : "Add"}
           </button>
         </div>
