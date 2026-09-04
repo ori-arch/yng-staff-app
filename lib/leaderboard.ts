@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { todayET } from "@/lib/date";
 
 export type LeaderboardCycle = {
   id: string;
@@ -142,7 +143,7 @@ export async function computeStandings(supabase: SupabaseClient, cycleId: string
 }
 
 export function daysRemaining(endDate: string): number {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayET();
   const msPerDay = 24 * 60 * 60 * 1000;
   const diff = (new Date(`${endDate}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / msPerDay;
   return Math.ceil(diff);

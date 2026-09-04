@@ -41,7 +41,7 @@ export default function WarningsList({ isManager }: { isManager: boolean }) {
 
   const [employeeId, setEmployeeId] = useState("");
   const [violationTypeId, setViolationTypeId] = useState("");
-  const [violationDate, setViolationDate] = useState(new Date().toISOString().slice(0, 10));
+  const [violationDate, setViolationDate] = useState(new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }));
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

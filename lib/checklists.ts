@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { todayET } from "@/lib/date";
 
 export type SegmentStatus = { segment: string; completedToday: boolean; startedToday: boolean };
 
@@ -6,7 +7,7 @@ export type SegmentStatus = { segment: string; completedToday: boolean; startedT
 export async function getSegmentStatus(employeeId: string, role: string): Promise<SegmentStatus[]> {
   if (role !== "front_desk" && role !== "aesthetician") return [];
   const supabase = supabaseAdmin();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayET();
 
   const [{ data: templates }, { data: submissions }] = await Promise.all([
     supabase.from("checklist_templates").select("segment").eq("role", role).eq("active", true),

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { todayET } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,7 +19,7 @@ export async function GET() {
   }
 
   const supabase = supabaseAdmin();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayET();
 
   const [{ data: templates }, { data: submissions }] = await Promise.all([
     supabase

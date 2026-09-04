@@ -6,6 +6,7 @@ import { getActiveCycle, computeStandings, daysRemaining, StandingRow, Leaderboa
 import { needsPolicyAcknowledgment } from "@/lib/policy";
 import { computeConductStatus, ConductStatus } from "@/lib/warnings";
 import { getOutstandingMissedChecklists } from "@/lib/compliance";
+import { todayET, addDaysET } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -62,11 +63,9 @@ function todayLabel() {
 
 async function getManagerStats() {
   const supabase = supabaseAdmin();
-  const today = new Date().toISOString().slice(0, 10);
-  const since = new Date();
-  since.setUTCDate(since.getUTCDate() - 30);
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const today = todayET();
+  const sinceDate = addDaysET(today, -30);
+  const yesterdayDate = addDaysET(today, -1);
 
   const [{ count: pendingTimeOff }, { count: pendingSwaps }, { count: openWarnings }, { count: openRoomIssues }, { count: itemsToOrder }, missedChecklists] =
     await Promise.all([
@@ -82,7 +81,7 @@ async function getManagerStats() {
         .select("id", { count: "exact", head: true })
         .eq("no_replacement", true)
         .eq("ordered", false),
-      getOutstandingMissedChecklists(supabase, since.toISOString().slice(0, 10), yesterday.toISOString().slice(0, 10)).catch(() => []),
+      getOutstandingMissedChecklists(supabase, sinceDate, yesterdayDate).catch(() => []),
     ]);
   return {
     pendingTimeOff: pendingTimeOff ?? 0,

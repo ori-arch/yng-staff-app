@@ -27,8 +27,11 @@ type MissedItem = {
   segment: string;
 };
 
+// The business's own Eastern calendar day, not the browser's local day or
+// raw UTC -- matters for consistency with the server-side "today" used to
+// decide what's actually a missed (past) checklist vs. still pending.
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
 }
 
 function addDays(dateStr: string, delta: number) {
@@ -84,7 +87,8 @@ export default function ComplianceDashboard() {
     fetch("/api/compliance/missed-summary")
       .then((r) => r.json())
       .then((data) => {
-        if (!data.error) setMissedRecent(data.items ?? []);
+        if (data.error) setError(data.error);
+        else setMissedRecent(data.items ?? []);
       })
       .finally(() => setLoadingMissed(false));
   }

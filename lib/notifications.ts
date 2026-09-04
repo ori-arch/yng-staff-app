@@ -2,6 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { sendPushToEmployees } from "@/lib/push";
 import { getSegmentStatus } from "@/lib/checklists";
 import { getSchedule } from "@/lib/schedule";
+import { todayET } from "@/lib/date";
 
 export type NotificationType = "message" | "broadcast" | "task_due" | "approval_needed";
 
@@ -109,7 +110,7 @@ export async function getPastDueTasks(
   const outstanding = segments.filter((s) => !s.completedToday);
   if (outstanding.length === 0) return [];
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayET();
   const { shifts } = await getSchedule(supabase, { startDate: today, endDate: today, employeeId });
   const myShift = shifts[0] ?? null;
   const nowMinutes = nowMinutesEastern();

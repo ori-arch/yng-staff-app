@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getOutstandingMissedChecklists } from "@/lib/compliance";
+import { todayET, addDaysET } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,13 +24,9 @@ export async function GET() {
   if (!isManager) return NextResponse.json({ error: "Managers only." }, { status: 403 });
 
   const supabase = supabaseAdmin();
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date();
-  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-  const untilDate = yesterday.toISOString().slice(0, 10);
-  const since = new Date();
-  since.setUTCDate(since.getUTCDate() - LOOKBACK_DAYS);
-  const sinceDate = since.toISOString().slice(0, 10);
+  const today = todayET();
+  const untilDate = addDaysET(today, -1);
+  const sinceDate = addDaysET(today, -LOOKBACK_DAYS);
 
   try {
     const items = await getOutstandingMissedChecklists(supabase, sinceDate, untilDate);

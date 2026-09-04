@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import PhotoCaptureField from "@/components/PhotoCaptureField";
 
 type Report = {
   id: string;
@@ -27,6 +26,7 @@ export default function Bugs({ isOwner }: { isOwner: boolean }) {
   const [loadingReports, setLoadingReports] = useState(true);
 
   const [description, setDescription] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
@@ -144,11 +144,51 @@ export default function Bugs({ isOwner }: { isOwner: boolean }) {
           />
         </div>
 
-        <PhotoCaptureField
-          label="Screenshot or photo (optional)"
-          preview={photoPreview}
-          onCapture={(f) => { setPhoto(f); setPhotoPreview(URL.createObjectURL(f)); }}
-        />
+        <div>
+          <label style={{ fontSize: 13, fontWeight: 600 }}>Screenshot or photo (optional)</label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) {
+                setPhoto(f);
+                setPhotoPreview(URL.createObjectURL(f));
+              }
+            }}
+          />
+          {photoPreview ? (
+            <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 10 }}>
+              <img src={photoPreview} alt="" style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8 }} />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{ fontSize: 13, padding: "6px 10px", borderRadius: 8, border: "1px solid var(--border-strong)", background: "white" }}
+              >
+                Choose a different one
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: "100%",
+                marginTop: 6,
+                padding: 13,
+                borderRadius: 12,
+                border: "1px dashed var(--gold)",
+                background: "var(--gold-soft)",
+                color: "var(--gold-dark)",
+                fontWeight: 600,
+                fontSize: 14.5,
+                cursor: "pointer",
+              }}
+            >
+              Add a Photo from Library
+            </button>
+          )}
+        </div>
 
         {error && <p className="error-text">{error}</p>}
         {justSubmitted && <p style={{ color: "var(--success)", fontSize: 13.5, margin: 0 }}>Reported ✓ — thanks for the heads-up.</p>}

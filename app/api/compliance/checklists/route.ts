@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getSchedule } from "@/lib/schedule";
+import { todayET } from "@/lib/date";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayET();
   const date = searchParams.get("date") || today;
   const isPastDate = date < today;
 
