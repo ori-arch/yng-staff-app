@@ -8,6 +8,7 @@ type SegmentStatus = {
   late: boolean;
   completedAt: string | null;
   warning: { id: string; status: string } | null;
+  reminded: boolean;
 };
 
 type EmployeeRow = {
@@ -16,6 +17,14 @@ type EmployeeRow = {
   role: string;
   scheduled: boolean;
   segments: SegmentStatus[];
+};
+
+type MissedItem = {
+  employeeId: string;
+  employeeName: string;
+  role: string;
+  date: string;
+  segment: string;
 };
 
 function todayStr() {
@@ -51,6 +60,10 @@ export default function ComplianceDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [issuing, setIssuing] = useState<string | null>(null);
+  const [reminding, setReminding] = useState<string | null>(null);
+  const [missedRecent, setMissedRecent] = useState<MissedItem[]>([]);
+  const [loadingMissed, setLoadingMissed] = useState(true);
+  const [showAllMissed, setShowAllMissed] = useState(false);
 
   function load() {
     setLoading(true);
@@ -66,10 +79,24 @@ export default function ComplianceDashboard() {
       .finally(() => setLoading(false));
   }
 
+  function loadMissedRecent() {
+    setLoadingMissed(true);
+    fetch("/api/compliance/missed-summary")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.error) setMissedRecent(data.items ?? []);
+      })
+      .finally(() => setLoadingMissed(false));
+  }
+
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
+
+  useEffect(() => {
+    loadMissedRecent();
+  }, []);
 
   async function generateWarning(employeeId: string, employeeName: string, segment: string) {
     const key = `${employeeId}:${segment}`;
@@ -88,11 +115,32 @@ export default function ComplianceDashboard() {
       const data = await res.json();
       if (res.ok) {
         load();
+        loadMissedRecent();
       } else {
         setError(data.error || "Could not generate warning.");
       }
     } finally {
       setIssuing(null);
+    }
+  }
+
+  async function sendReminder(employeeId: string, segment: string) {
+    const key = `${employeeId}:${segment}`;
+    setReminding(key);
+    try {
+      const res = await fetch("/api/compliance/remind", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId, date, segment }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        load();
+      } else {
+        setError(data.error || "Could not send reminder.");
+      }
+    } finally {
+      setReminding(null);
     }
   }
 
@@ -111,6 +159,48 @@ export default function ComplianceDashboard() {
     <div className="container">
       <h1 className="page-title">Compliance</h1>
       <p className="page-sub">Checklist completion by employee and day.</p>
+
+      {!loadingMissed && missedRecent.length > 0 && (
+        <div className="card" style={{ marginTop: 12, borderLeft: "4px solid var(--danger)" }}>
+          <p style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: "var(--danger)" }}>
+            {missedRecent.length} missed checklist{missedRecent.length === 1 ? "" : "s"} from the last 30 days still
+            need attention
+          </p>
+          <p style={{ margin: "4px 0 8px", fontSize: 12, color: "var(--muted)" }}>
+            This stays visible no matter which day you're viewing — it only clears once a warning is issued.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {(showAllMissed ? missedRecent : missedRecent.slice(0, 5)).map((m) => (
+              <button
+                key={`${m.employeeId}:${m.date}:${m.segment}`}
+                onClick={() => setDate(m.date)}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 12.5,
+                  padding: "4px 6px",
+                  borderRadius: 6,
+                  background: "var(--danger-soft)",
+                  textAlign: "left",
+                }}
+              >
+                <span>
+                  {m.employeeName} · {m.segment}
+                </span>
+                <span style={{ color: "var(--muted)" }}>{fmtDateLong(m.date)}</span>
+              </button>
+            ))}
+          </div>
+          {missedRecent.length > 5 && (
+            <button
+              onClick={() => setShowAllMissed((v) => !v)}
+              style={{ fontSize: 12, color: "var(--muted)", textDecoration: "underline", padding: 0, marginTop: 6 }}
+            >
+              {showAllMissed ? "Show less" : `Show all ${missedRecent.length}`}
+            </button>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}>
         <button
@@ -201,6 +291,26 @@ export default function ComplianceDashboard() {
                             {style.label}
                             {seg.late && " (late)"}
                           </span>
+                          {seg.status === "missed" && !seg.warning && (
+                            seg.reminded ? (
+                              <span style={{ fontSize: 11, color: "var(--muted)" }}>Reminder sent</span>
+                            ) : (
+                              <button
+                                onClick={() => sendReminder(row.employeeId, seg.segment)}
+                                disabled={reminding === key}
+                                style={{
+                                  fontSize: 11.5,
+                                  padding: "4px 8px",
+                                  borderRadius: 6,
+                                  border: "1px solid var(--border-strong)",
+                                  color: "var(--ink)",
+                                  background: "white",
+                                }}
+                              >
+                                {reminding === key ? "Sending…" : "Send Reminder"}
+                              </button>
+                            )
+                          )}
                           {seg.status === "missed" && !seg.warning && (
                             <button
                               onClick={() => generateWarning(row.employeeId, row.name, seg.segment)}

@@ -76,6 +76,16 @@ export async function GET(req: NextRequest) {
     .like("source_table", "checklist:%");
   if (warnError) return NextResponse.json({ error: warnError.message }, { status: 500 });
 
+  // Reminders are a soft nudge sent before a formal warning -- tagged with a
+  // title unique to this employee/date/segment so we can tell whether one
+  // was already sent for this exact cell.
+  const { data: reminders, error: remindError } = await supabase
+    .from("notifications")
+    .select("employee_id, title")
+    .like("title", `Checklist reminder — % (${date})`)
+    .in("employee_id", employeeIds.length ? employeeIds : ["00000000-0000-0000-0000-000000000000"]);
+  if (remindError) return NextResponse.json({ error: remindError.message }, { status: 500 });
+
   const rows = (employees ?? []).map((emp) => {
     const segments = segmentsByRole[emp.role] ?? [];
     const scheduled = isScheduled(emp.id);
@@ -92,12 +102,16 @@ export async function GET(req: NextRequest) {
       const existingWarning = (warnings ?? []).find(
         (w) => w.employee_id === emp.id && w.source_table === `checklist:${segment}`
       );
+      const reminded = (reminders ?? []).some(
+        (r) => r.employee_id === emp.id && r.title === `Checklist reminder — ${segment} (${date})`
+      );
       return {
         segment,
         status,
         late,
         completedAt: sub?.completed_at ?? null,
         warning: existingWarning ? { id: existingWarning.id, status: existingWarning.status } : null,
+        reminded,
       };
     });
     return { employeeId: emp.id, name: emp.name, role: emp.role, scheduled, segments: segmentStatuses };

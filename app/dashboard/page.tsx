@@ -5,6 +5,7 @@ import { getSegmentStatus } from "@/lib/checklists";
 import { getActiveCycle, computeStandings, daysRemaining, StandingRow, LeaderboardCycle } from "@/lib/leaderboard";
 import { needsPolicyAcknowledgment } from "@/lib/policy";
 import { computeConductStatus, ConductStatus } from "@/lib/warnings";
+import { getOutstandingMissedChecklists } from "@/lib/compliance";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -61,7 +62,13 @@ function todayLabel() {
 
 async function getManagerStats() {
   const supabase = supabaseAdmin();
-  const [{ count: pendingTimeOff }, { count: pendingSwaps }, { count: openWarnings }, { count: openRoomIssues }, { count: itemsToOrder }] =
+  const today = new Date().toISOString().slice(0, 10);
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 30);
+  const yesterday = new Date();
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+
+  const [{ count: pendingTimeOff }, { count: pendingSwaps }, { count: openWarnings }, { count: openRoomIssues }, { count: itemsToOrder }, missedChecklists] =
     await Promise.all([
       supabase.from("time_off_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase
@@ -75,6 +82,7 @@ async function getManagerStats() {
         .select("id", { count: "exact", head: true })
         .eq("no_replacement", true)
         .eq("ordered", false),
+      getOutstandingMissedChecklists(supabase, since.toISOString().slice(0, 10), yesterday.toISOString().slice(0, 10)).catch(() => []),
     ]);
   return {
     pendingTimeOff: pendingTimeOff ?? 0,
@@ -82,6 +90,7 @@ async function getManagerStats() {
     openWarnings: openWarnings ?? 0,
     openRoomIssues: openRoomIssues ?? 0,
     itemsToOrder: itemsToOrder ?? 0,
+    missedChecklists: missedChecklists.length,
   };
 }
 
@@ -281,7 +290,7 @@ async function ManagerDashboard() {
           <span className="label">Open warnings</span>
         </a>
       </div>
-      <div className="stat-row" style={{ gridTemplateColumns: "repeat(2, 1fr)", marginTop: 8 }}>
+      <div className="stat-row" style={{ gridTemplateColumns: "repeat(3, 1fr)", marginTop: 8 }}>
         <a href="/room-issues" className={`stat-card${stats.openRoomIssues > 0 ? " attention" : ""}`}>
           <span className="num">{stats.openRoomIssues}</span>
           <span className="label">Open room issues</span>
@@ -289,6 +298,10 @@ async function ManagerDashboard() {
         <a href="/inventory/room-restocking" className={`stat-card${stats.itemsToOrder > 0 ? " attention" : ""}`}>
           <span className="num">{stats.itemsToOrder}</span>
           <span className="label">Items to order</span>
+        </a>
+        <a href="/compliance" className={`stat-card${stats.missedChecklists > 0 ? " attention" : ""}`}>
+          <span className="num">{stats.missedChecklists}</span>
+          <span className="label">Missed compliance</span>
         </a>
       </div>
 
